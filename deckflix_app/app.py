@@ -82,7 +82,26 @@ def library_health():
     print(f"Sample/junk candidates:  {len(report['junk'])}")
     print(f"Nested movie warnings:   {len(report['nested'])}")
     print()
-    print("Nothing has been changed.")
+
+if comparison["new_media"]:
+    print("First New Items")
+    print("───────────────")
+
+    for item in comparison["new_media"][:10]:
+        if item.media_type == "movie":
+            if item.year:
+                print(f"🎬 {item.title} ({item.year})")
+            else:
+                print(f"🎬 {item.title}")
+        else:
+            print(
+                f"📺 {item.title} "
+                f"S{item.season:02d}E{item.episode:02d}"
+            )
+
+    print()
+
+print("Nothing has been changed.")
 
 
 def repair_preview():
