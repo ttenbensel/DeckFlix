@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 
 from deckflix_app.scanner import scan_videos
 from deckflix_app.health import clean_title
@@ -17,12 +18,36 @@ def is_tv_file(path):
     )
 
 
+def get_storage_info(path):
+    target = Path(path)
+
+    if not target.exists():
+        return {
+            "available": False,
+            "used_tb": 0,
+            "total_tb": 0,
+            "free_tb": 0,
+        }
+
+    usage = shutil.disk_usage(target)
+
+    return {
+        "available": True,
+        "used_tb": usage.used / 1024**4,
+        "total_tb": usage.total / 1024**4,
+        "free_tb": usage.free / 1024**4,
+    }
+
+
 def scan_shuttle(shuttle_path):
     shuttle = Path(shuttle_path)
+    storage = get_storage_info(shuttle)
 
     if not shuttle.exists():
         return {
             "connected": False,
+            "path": shuttle,
+            "storage": storage,
             "files": [],
             "movies": [],
             "tv": [],
@@ -40,6 +65,8 @@ def scan_shuttle(shuttle_path):
 
     return {
         "connected": True,
+        "path": shuttle,
+        "storage": storage,
         "files": files,
         "movies": movies,
         "tv": tv,
