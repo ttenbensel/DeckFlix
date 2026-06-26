@@ -1,0 +1,261 @@
+from pathlib import Path
+from collections import defaultdict
+import shutil
+import re
+
+VERSION = "0.3.0"
+
+MOVIES = Path("/mnt/dest4tb/movie")
+TV = Path("/mnt/dest4tb/tv")
+SHUTTLE = Path("/mnt/source2tb")
+LIBRARY = Path("/mnt/dest4tb")
+QUARANTINE = Path("/mnt/dest4tb/deckflix-quarantine")
+
+VIDEO_EXTS = {".mkv", ".mp4", ".avi", ".mov", ".wmv", ".m4v"}
+
+def logo():
+    print(f"""
+═══════════════════════════════════════════════
+                 ⚓ DECKFLIX ⚓
+        Shipboard Media Management
+═══════════════════════════════════════════════
+Version {VERSION}
+""")
+
+def scan_videos(path):
+    if not path.exists():
+        return []
+    return [p for p in path.rglob("*") if p.is_file() and p.suffix.lower() in VIDEO_EXTS]
+
+def size_gb(path):
+    try:
+        return path.stat().st_size / 1024**3
+    except Exception:
+        return 0
+
+def quality_score(path):
+    n = str(path).lower()
+    score = 0
+    if "2160p" in n or "4k" in n:
+        score += 60
+    elif "1080p" in n:
+        score += 40
+    elif "720p" in n:
+        score += 20
+    if "bluray" in n:
+        score += 25
+    elif "web-dl" in n:
+        score += 20
+    elif "webrip" in n:
+        score += 15
+    if "repack" in n or "proper" in n:
+        score += 5
+    if "sample" in n:
+        score -= 50
+    score += min(int(size_gb(path)), 20)
+    return score
+
+def clean_title(name):
+    name = name.lower()
+    name = re.sub(r"\[[^\]]*\]", " ", name)
+    name = re.sub(r"\([^\)]*\)", " ", name)
+    name = re.sub(r"\b(720p|1080p|2160p|4k|webrip|web-dl|bluray|brrip|hdrip|dvdscr|x264|x265|yts|tgx|rarbg|galaxyrg|repack|proper|5.1|10bit)\b", " ", name)
+    name = re.sub(r"[^a-z0-9]+", " ", name)
+    name = re.sub(r"\b(19|20)\d{2}\b", " ", name)
+    return " ".join(name.split()).strip()
+
+def bridge():
+    movies = scan_videos(MOVIES)
+    tv = scan_videos(TV)
+    shuttle = scan_videos(SHUTTLE)
+    used = shutil.disk_usage(LIBRARY).used / 1024**4
+    total = shutil.disk_usage(LIBRARY).total / 1024**4
+    free = shutil.disk_usage(LIBRARY).free / 1024**4
+
+    print()
+    print("Bridge Dashboard")
+    print("────────────────")
+    print("Vessel Mode        ⚓ Harbour")
+    print("Low Impact         Enabled")
+    print()
+    print(f"Movies             {len(movies)}")
+    print(f"TV Episodes        {len(tv)}")
+    print(f"Shuttle Videos     {len(shuttle)}")
+    print()
+    print(f"Media Storage      {used:.2f} TB / {total:.2f} TB")
+    print(f"Free Space         {free:.2f} TB")
+    print()
+    print(f"Movies Path        {MOVIES}")
+    print(f"TV Path            {TV}")
+    print(f"Shuttle Path       {SHUTTLE}")
+    print()
+    print("Status             Ready")
+    print("Nothing has been changed.")
+
+def scan_shuttle():
+    files = scan_videos(SHUTTLE)
+    print()
+    print("Receive Shuttle")
+    print("───────────────")
+    print(f"Video files found: {len(files)}")
+    for f in files[:40]:
+        print(f"[DRY RUN] {f}")
+    print()
+    print("Nothing has been changed.")
+
+def get_repair_data():
+    movies = scan_videos(MOVIES)
+    groups = defaultdict(list)
+    junk = []
+    nested = []
+
+    for f in movies:
+        key = clean_title(f.parent.name)
+        if key:
+            groups[key].append(f)
+
+        lower = str(f).lower()
+
+        if "sample" in lower or "desktop.ini" in lower or "thumbs.db" in lower:
+            junk.append(f)
+
+        try:
+            rel = f.resolve().relative_to(MOVIES.resolve())
+            if len(rel.parts) >= 3:
+                nested.append(f)
+        except Exception:
+            pass
+
+    duplicates = {k: v for k, v in groups.items() if len(v) > 1}
+    return movies, duplicates, junk, nested
+
+def library_health():
+    movies, duplicates, junk, nested = get_repair_data()
+    tv = scan_videos(TV)
+
+    print()
+    print("Library Health")
+    print("──────────────")
+    print(f"Movies video files:      {len(movies)}")
+    print(f"TV video files:          {len(tv)}")
+    print(f"Possible duplicates:     {len(duplicates)}")
+    print(f"Sample/junk candidates:  {len(junk)}")
+    print(f"Nested movie warnings:   {len(nested)}")
+    print()
+    print("Nothing has been changed.")
+
+def repair_preview():
+    movies, duplicates, junk, nested = get_repair_data()
+
+    while True:
+        print()
+        print("Repair Preview")
+        print("──────────────")
+        print("Dry-run only. Nothing will be moved, renamed, or deleted.")
+        print()
+        print(f"1. Review sample/junk files       {len(junk)}")
+        print(f"2. Review nested movie warnings   {len(nested)}")
+        print(f"3. Review duplicate groups        {len(duplicates)}")
+        print("4. Quarantine information")
+        print("5. Back")
+        print()
+
+        choice = input("Select repair option: ").strip()
+
+        if choice == "1":
+            print()
+            print("Sample/Junk Files")
+            print("─────────────────")
+            for f in junk or []:
+                print(f"[WOULD QUARANTINE] {f}")
+            if not junk:
+                print("None found")
+            input("\nPress Enter to continue...")
+
+        elif choice == "2":
+            print()
+            print("Nested Movie Warnings")
+            print("─────────────────────")
+            for f in nested[:50]:
+                print(f"[WOULD REVIEW MOVE] {f}")
+            if len(nested) > 50:
+                print(f"...and {len(nested) - 50} more")
+            if not nested:
+                print("None found")
+            input("\nPress Enter to continue...")
+
+        elif choice == "3":
+            print()
+            print("Duplicate Review")
+            print("────────────────")
+            shown = 0
+            for title, files in sorted(duplicates.items()):
+                ranked = sorted(files, key=quality_score, reverse=True)
+                keep = ranked[0]
+                print()
+                print(title.title())
+                print(f"[KEEP]   score {quality_score(keep):>3} {size_gb(keep):>5.1f} GB {keep}")
+                for f in ranked[1:]:
+                    print(f"[REVIEW] score {quality_score(f):>3} {size_gb(f):>5.1f} GB {f}")
+                shown += 1
+                if shown >= 20:
+                    break
+            input("\nPress Enter to continue...")
+
+        elif choice == "4":
+            print()
+            print("Quarantine")
+            print("──────────")
+            print("Future repair actions will move files here first:")
+            print(QUARANTINE)
+            print()
+            print("DeckFlix rule:")
+            print("Never delete first. Quarantine, verify, then remove later.")
+            input("\nPress Enter to continue...")
+
+        elif choice == "5":
+            break
+        else:
+            print("Invalid option.")
+
+def ship_mode():
+    print()
+    print("Ship Mode")
+    print("─────────")
+    print("Current Mode      ⚓ Harbour")
+    print("Low Impact        Enabled")
+    print("Internet Tasks    Allowed")
+    print("Background Work   Normal")
+    print()
+    print("Sea Mode controls coming next.")
+
+def main():
+    while True:
+        logo()
+        print("1. Bridge Dashboard")
+        print("2. Receive Shuttle")
+        print("3. Library Health")
+        print("4. Repair Preview")
+        print("5. Ship Mode")
+        print("6. Exit")
+        print()
+
+        choice = input("Select option: ").strip()
+
+        if choice == "1":
+            bridge()
+        elif choice == "2":
+            scan_shuttle()
+        elif choice == "3":
+            library_health()
+        elif choice == "4":
+            repair_preview()
+        elif choice == "5":
+            ship_mode()
+        elif choice == "6":
+            print("Securing DeckFlix console.")
+            break
+        else:
+            print("Invalid option.")
+
+        input("\nPress Enter to return to menu...")
