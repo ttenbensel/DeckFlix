@@ -129,5 +129,7 @@ def main():
             break
 
         else:
-            print("\nInvalid option.")       input("\nPress Enter to return to menu...")
+             print("\nInvalid option.")
+
+        input("\nPress Enter to return to menu...")
 ```
