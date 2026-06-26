@@ -6,6 +6,7 @@ from deckflix_app.import_queue import build_import_queue
 from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
+from deckflix_app.import_runner import run_import
 
 VERSION = "0.6.1"
 
