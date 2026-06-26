@@ -5,7 +5,7 @@ from deckflix_app.health import library_report, quality_score, size_gb
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 
-VERSION = "0.4.2"
+VERSION = "0.4.3"
 
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
@@ -26,6 +26,7 @@ def receive_shuttle():
     shuttle = shuttle_scan(SHUTTLE)
     library_movies = scan_videos(MOVIES)
     comparison = compare_to_library(shuttle["files"], library_movies)
+    storage = shuttle["storage"]
 
     print()
     print("Receive Shuttle")
@@ -37,6 +38,12 @@ def receive_shuttle():
         print("Status              Shuttle Connected")
     else:
         print("Status              Shuttle Not Found")
+
+    print(f"Shuttle Path        {shuttle['path']}")
+
+    if storage["available"]:
+        print(f"Storage Used        {storage['used_tb']:.2f} TB / {storage['total_tb']:.2f} TB")
+        print(f"Free Space          {storage['free_tb']:.2f} TB")
 
     print()
     print(f"Video files          {len(shuttle['files'])}")
