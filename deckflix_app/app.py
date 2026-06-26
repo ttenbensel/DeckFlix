@@ -5,7 +5,7 @@ from deckflix_app.health import library_report, quality_score, size_gb
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 
-VERSION = "0.4.3"
+VERSION = "0.4.4"
 
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
@@ -25,7 +25,7 @@ Version {VERSION}
 def receive_shuttle():
     shuttle = shuttle_scan(SHUTTLE)
     library_movies = scan_videos(MOVIES)
-    comparison = compare_to_library(shuttle["files"], library_movies)
+    comparison = compare_to_library(shuttle["media"], library_movies)
     storage = shuttle["storage"]
 
     print()
@@ -60,11 +60,25 @@ def receive_shuttle():
     if not shuttle["files"]:
         print("No shuttle media found.")
 
-    for file in comparison["new_media"][:30]:
-        print(f"[NEW] {file}")
+    for item in comparison["new_media"][:30]:
+        print(f"[NEW] {item.path}")
 
-    for file in comparison["duplicates"][:30]:
-        print(f"[REVIEW DUPLICATE] {file}")
+    for item in comparison["duplicates"][:30]:
+        print(f"[REVIEW DUPLICATE] {item.path}")
+
+    if comparison["new_media"]:
+        print()
+        print("First New Items")
+        print("───────────────")
+
+        for item in comparison["new_media"][:10]:
+            if item.media_type == "movie":
+                if item.year:
+                    print(f"🎬 {item.title} ({item.year})")
+                else:
+                    print(f"🎬 {item.title}")
+            else:
+                print(f"📺 {item.title} S{item.season:02d}E{item.episode:02d}")
 
     print()
     print("Nothing has been changed.")
@@ -82,26 +96,7 @@ def library_health():
     print(f"Sample/junk candidates:  {len(report['junk'])}")
     print(f"Nested movie warnings:   {len(report['nested'])}")
     print()
-
-if comparison["new_media"]:
-    print("First New Items")
-    print("───────────────")
-
-    for item in comparison["new_media"][:10]:
-        if item.media_type == "movie":
-            if item.year:
-                print(f"🎬 {item.title} ({item.year})")
-            else:
-                print(f"🎬 {item.title}")
-        else:
-            print(
-                f"📺 {item.title} "
-                f"S{item.season:02d}E{item.episode:02d}"
-            )
-
-    print()
-
-print("Nothing has been changed.")
+    print("Nothing has been changed.")
 
 
 def repair_preview():
