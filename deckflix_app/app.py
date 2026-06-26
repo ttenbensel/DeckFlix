@@ -2,10 +2,12 @@ from pathlib import Path
 
 from deckflix_app.dashboard import show_dashboard
 from deckflix_app.health import library_report, quality_score, size_gb
+from deckflix_app.import_queue import build_import_queue
+from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 
-VERSION = "0.5.2"
+VERSION = "0.6.1"
 
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
@@ -20,6 +22,13 @@ def logo():
 ═══════════════════════════════════════════════
 Version {VERSION}
 """)
+
+
+def build_current_queue():
+    shuttle = shuttle_scan(SHUTTLE)
+    library_movies = scan_videos(MOVIES)
+    comparison = compare_to_library(shuttle["media"], library_movies)
+    return build_import_queue(comparison)
 
 
 def print_movie_item(item, prefix):
@@ -98,6 +107,11 @@ def receive_shuttle():
 
     print()
     print("Nothing has been changed.")
+
+
+def import_queue():
+    queue = build_current_queue()
+    show_queue(queue)
 
 
 def library_health():
@@ -214,10 +228,11 @@ def main():
         logo()
         print("1. Bridge Dashboard")
         print("2. Receive Shuttle")
-        print("3. Library Health")
-        print("4. Repair Preview")
-        print("5. Ship Mode")
-        print("6. Exit")
+        print("3. Import Queue")
+        print("4. Library Health")
+        print("5. Repair Preview")
+        print("6. Ship Mode")
+        print("7. Exit")
         print()
 
         choice = input("Select option: ").strip()
@@ -227,12 +242,14 @@ def main():
         elif choice == "2":
             receive_shuttle()
         elif choice == "3":
-            library_health()
+            import_queue()
         elif choice == "4":
-            repair_preview()
+            library_health()
         elif choice == "5":
-            ship_mode()
+            repair_preview()
         elif choice == "6":
+            ship_mode()
+        elif choice == "7":
             print("Securing DeckFlix console.")
             break
         else:
