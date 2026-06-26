@@ -28,7 +28,7 @@ def build_current_queue():
     shuttle = shuttle_scan(SHUTTLE)
     library_movies = scan_videos(MOVIES)
     comparison = compare_to_library(shuttle["media"], library_movies)
-    return build_import_queue(comparison)
+    return build_import_queue(comparison, library_movies)
 
 
 def print_movie_item(item, prefix):
