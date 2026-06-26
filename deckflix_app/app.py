@@ -114,6 +114,16 @@ def import_queue():
     queue = build_current_queue()
     show_queue(queue)
 
+print()
+choice = input("Run approved imports? (y/N): ").strip().lower()
+
+if choice == "y":
+    run_import(
+        queue,
+        MOVIES,
+        TV,
+    )
+
 
 def library_health():
     report = library_report(MOVIES, TV)
