@@ -5,7 +5,7 @@ from deckflix_app.health import library_report, quality_score, size_gb
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 
-VERSION = "0.4.4"
+VERSION = "0.5.2"
 
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
@@ -22,6 +22,24 @@ Version {VERSION}
 """)
 
 
+def print_movie_item(item, prefix):
+    if item.year:
+        print(f"{prefix} 🎬 {item.title} ({item.year})")
+    else:
+        print(f"{prefix} 🎬 {item.title}")
+
+
+def print_tv_item(item, prefix):
+    print(f"{prefix} 📺 {item.title} S{item.season:02d}E{item.episode:02d}")
+
+
+def print_media_item(item, prefix):
+    if item.media_type == "tv":
+        print_tv_item(item, prefix)
+    else:
+        print_movie_item(item, prefix)
+
+
 def receive_shuttle():
     shuttle = shuttle_scan(SHUTTLE)
     library_movies = scan_videos(MOVIES)
@@ -30,55 +48,53 @@ def receive_shuttle():
 
     print()
     print("Receive Shuttle")
-    print("───────────────")
+    print("═══════════════")
     print("Dry-run only. Nothing will be copied, moved, or deleted.")
     print()
 
+    print("Drive")
+    print("─────")
     if shuttle["connected"]:
-        print("Status              Shuttle Connected")
+        print("Status              Connected")
     else:
-        print("Status              Shuttle Not Found")
+        print("Status              Not Found")
 
-    print(f"Shuttle Path        {shuttle['path']}")
+    print(f"Path                {shuttle['path']}")
 
     if storage["available"]:
-        print(f"Storage Used        {storage['used_tb']:.2f} TB / {storage['total_tb']:.2f} TB")
-        print(f"Free Space          {storage['free_tb']:.2f} TB")
+        print(f"Capacity            {storage['total_tb']:.2f} TB")
+        print(f"Used                {storage['used_tb']:.2f} TB")
+        print(f"Free                {storage['free_tb']:.2f} TB")
 
     print()
+    print("Media Summary")
+    print("─────────────")
     print(f"Video files          {len(shuttle['files'])}")
-    print(f"Movie files          {len(shuttle['movies'])}")
-    print(f"TV episode files     {len(shuttle['tv'])}")
+    print(f"Movies found         {len(shuttle['movies'])}")
+    print(f"TV episodes found    {len(shuttle['tv'])}")
     print()
-    print(f"New media            {len(comparison['new_media'])}")
+    print(f"New items            {len(comparison['new_media'])}")
     print(f"Possible duplicates  {len(comparison['duplicates'])}")
-    print()
 
-    print("Import Plan")
-    print("───────────")
+    print()
+    print("Import Preview")
+    print("──────────────")
 
     if not shuttle["files"]:
         print("No shuttle media found.")
+    else:
+        if comparison["new_media"]:
+            print("New media")
+            print("─────────")
+            for item in comparison["new_media"][:20]:
+                print_media_item(item, "[NEW]")
 
-    for item in comparison["new_media"][:30]:
-        print(f"[NEW] {item.path}")
-
-    for item in comparison["duplicates"][:30]:
-        print(f"[REVIEW DUPLICATE] {item.path}")
-
-    if comparison["new_media"]:
-        print()
-        print("First New Items")
-        print("───────────────")
-
-        for item in comparison["new_media"][:10]:
-            if item.media_type == "movie":
-                if item.year:
-                    print(f"🎬 {item.title} ({item.year})")
-                else:
-                    print(f"🎬 {item.title}")
-            else:
-                print(f"📺 {item.title} S{item.season:02d}E{item.episode:02d}")
+        if comparison["duplicates"]:
+            print()
+            print("Needs review")
+            print("────────────")
+            for item in comparison["duplicates"][:20]:
+                print_media_item(item, "[DUPLICATE]")
 
     print()
     print("Nothing has been changed.")
