@@ -113,16 +113,30 @@ def receive_shuttle():
 def import_queue():
     queue = build_current_queue()
     show_queue(queue)
+while True:
 
-print()
-choice = input("Run approved imports? (y/N): ").strip().lower()
+    print()
+    print("Queue Options")
+    print("─────────────")
+    print("1. Run approved imports")
+    print("2. Return to main menu")
+    print()
 
-if choice == "y":
-    run_import(
-        queue,
-        MOVIES,
-        TV,
-    )
+    choice = input("Select option: ").strip()
+
+    if choice == "1":
+        run_import(
+            queue,
+            MOVIES,
+            TV,
+        )
+        break
+
+    elif choice == "2":
+        break
+
+    else:
+        print("Invalid option.")
 
 
 def library_health():
