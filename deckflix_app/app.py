@@ -132,4 +132,3 @@ def main():
              print("\nInvalid option.")
 
         input("\nPress Enter to return to menu...")
-```
