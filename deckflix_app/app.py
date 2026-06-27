@@ -7,6 +7,7 @@ from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 from deckflix_app.import_runner import run_import
+from deckflix_app.version import APP_NAME, VERSION, CODENAME
 
 VERSION = "0.6.1"
 
@@ -16,13 +17,11 @@ SHUTTLE = Path("/mnt/source2tb")
 
 
 def logo():
-    print(f"""
-═══════════════════════════════════════════════
-                 ⚓ DECKFLIX ⚓
-        Shipboard Media Management
-═══════════════════════════════════════════════
-Version {VERSION}
-""")
+    print("═══════════════════════════════════════════════")
+    print(f"                 ⚓ {APP_NAME.upper()} ⚓")
+    print("        Shipboard Media Management")
+    print("═══════════════════════════════════════════════")
+    print(f"Version {VERSION} - {CODENAME}")
 
 
 def build_current_queue():
