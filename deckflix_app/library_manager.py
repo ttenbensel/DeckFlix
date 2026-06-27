@@ -85,3 +85,19 @@ def library_summary(movies_path, tv_path):
         "unknown_quality": find_unknown_quality(all_items),
         "missing_year_movies": find_missing_year_movies(scan["movie_items"]),
     }
+
+def calculate_health_score(summary):
+    """
+    Calculate a simple library health score.
+
+    Starts at 100 and deducts points for issues.
+    """
+
+    score = 100
+
+    score -= min(len(summary["movie_duplicates"]), 20)
+    score -= min(len(summary["tv_duplicates"]), 10)
+    score -= min(len(summary["missing_year_movies"]), 10)
+    score -= min(len(summary["unknown_quality"]) // 10, 20)
+
+    return max(score, 0)
