@@ -1,36 +1,60 @@
-import shutil
-
+from deckflix_app.library_manager import (
+    library_summary,
+    calculate_health_score,
+)
 from deckflix_app.scanner import count_videos
+from deckflix_app.shuttle import scan_shuttle
+
+
+def health_status(score):
+    if score >= 90:
+        return "🟢 Excellent"
+    if score >= 75:
+        return "🟡 Good"
+    if score >= 50:
+        return "🟠 Needs Attention"
+    return "🔴 Critical"
 
 
 def show_dashboard(movies_path, tv_path, shuttle_path):
+    summary = library_summary(
+        movies_path,
+        tv_path,
+    )
 
-    movies = count_videos(movies_path)
-    tv = count_videos(tv_path)
-    shuttle = count_videos(shuttle_path)
-
-    usage = shutil.disk_usage(movies_path)
-
-    used_tb = usage.used / 1024**4
-    total_tb = usage.total / 1024**4
-    free_tb = usage.free / 1024**4
+    score = calculate_health_score(summary)
+    shuttle = scan_shuttle(shuttle_path)
 
     print()
     print("Bridge Dashboard")
-    print("────────────────")
-    print("Vessel Mode        ⚓ Harbour")
-    print("Low Impact         Enabled")
+    print("════════════════")
     print()
-    print(f"Movies             {movies}")
-    print(f"TV Episodes        {tv}")
-    print(f"Shuttle Videos     {shuttle}")
+
+    print("Library")
+    print("───────")
+    print(f"Health             {score}% {health_status(score)}")
+    print(f"Movies             {summary['movies_total']}")
+    print(f"TV Episodes        {summary['tv_total']}")
     print()
-    print(f"Media Storage      {used_tb:.2f} TB / {total_tb:.2f} TB")
-    print(f"Free Space         {free_tb:.2f} TB")
+    print("Top Issues")
+    print("──────────")
+    print(f"Duplicate Titles   {len(summary['movie_duplicates'])}")
+    print(f"Unknown Quality    {len(summary['unknown_quality'])}")
+    print(f"Missing Years      {len(summary['missing_year_movies'])}")
     print()
-    print(f"Movies Path        {movies_path}")
-    print(f"TV Path            {tv_path}")
-    print(f"Shuttle Path       {shuttle_path}")
+
+    print("Shuttle")
+    print("───────")
+    if shuttle["connected"]:
+        print("Status             Connected")
+        print(f"Path               {shuttle['path']}")
+        print(f"Video Files         {len(shuttle['files'])}")
+    else:
+        print("Status             Not Found")
+
     print()
-    print("Status             Ready")
+    print("System")
+    print("──────")
+    print("Jellyfin           Not connected yet")
+    print()
     print("Nothing has been changed.")
