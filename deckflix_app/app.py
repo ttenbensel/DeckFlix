@@ -9,7 +9,6 @@ from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_librar
 from deckflix_app.import_runner import run_import
 from deckflix_app.version import APP_NAME, VERSION, CODENAME
 
-VERSION = "0.6.1"
 
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
