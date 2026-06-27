@@ -44,11 +44,16 @@ def build_import_plan(queue, movies_path, tv_path):
             tv_path,
         )
 
+        if target.exists():
+            status = "SKIP_EXISTS"
+        else:
+            status = "READY"
+
         plan.append({
             "media": media,
             "source": media.path,
             "target": target,
-            "status": "READY",
+            "status": status,
         })
 
     return plan
@@ -79,11 +84,18 @@ def copy_one_item(plan_item):
     """
     Copy one approved item.
 
-    This is intentionally separate so approval can happen before copy.
+    Never overwrite an existing destination file.
     """
 
     source = Path(plan_item["source"])
     target = Path(plan_item["target"])
+
+    if target.exists():
+        return {
+            "source": source,
+            "target": target,
+            "status": "SKIPPED_EXISTS",
+        }
 
     target.parent.mkdir(
         parents=True,
