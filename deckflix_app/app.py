@@ -9,6 +9,7 @@ from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_librar
 from deckflix_app.import_runner import run_import
 from deckflix_app.version import APP_NAME, VERSION, CODENAME
 from deckflix_app.library_health import show_library_health
+from deckflix_app.duplicate_inspector import show_duplicate_inspector
 
 
 MOVIES = Path("/mnt/dest4tb/movie")
@@ -280,3 +281,11 @@ def main():
             print("Invalid option.")
 
         input("\nPress Enter to return to menu...")
+
+def duplicate_inspector():
+    show_duplicate_inspector(
+        MOVIES,
+        TV,
+    )
+
+    input("\nPress Enter to return to the main menu...")
