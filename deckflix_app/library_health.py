@@ -1,4 +1,5 @@
 from deckflix_app.library_manager import library_summary
+from deckflix_app.library_manager import calculate_health_score
 
 
 def show_library_health(movies_path, tv_path):
@@ -6,6 +7,7 @@ def show_library_health(movies_path, tv_path):
         movies_path,
         tv_path,
     )
+score = calculate_health_score(summary)
 
     print()
     print("Library Health")
@@ -44,3 +46,19 @@ def show_library_health(movies_path, tv_path):
 
     print()
     print(f"Unknown Quality Files : {len(summary['unknown_quality'])}")
+
+print()
+print("Overall Health")
+print("──────────────")
+
+if score >= 90:
+    status = "🟢 Excellent"
+elif score >= 75:
+    status = "🟡 Good"
+elif score >= 50:
+    status = "🟠 Needs Attention"
+else:
+    status = "🔴 Critical"
+
+print(f"Score               : {score}%")
+print(f"Status              : {status}")
