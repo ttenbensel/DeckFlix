@@ -8,6 +8,7 @@ from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 from deckflix_app.import_runner import run_import
 from deckflix_app.version import APP_NAME, VERSION, CODENAME
+from deckflix_app.library_health import show_library_health
 
 
 MOVIES = Path("/mnt/dest4tb/movie")
@@ -144,18 +145,12 @@ def import_queue():
 
 
 def library_health():
-    report = library_report(MOVIES, TV)
+    show_library_health(
+        MOVIES,
+        TV,
+    )
 
-    print()
-    print("Library Health")
-    print("──────────────")
-    print(f"Movies video files:      {len(report['movies'])}")
-    print(f"TV video files:          {len(report['tv'])}")
-    print(f"Possible duplicates:     {len(report['duplicates'])}")
-    print(f"Sample/junk candidates:  {len(report['junk'])}")
-    print(f"Nested movie warnings:   {len(report['nested'])}")
-    print()
-    print("Nothing has been changed.")
+    input("\nPress Enter to return to the main menu...")
 
 
 def repair_preview():
