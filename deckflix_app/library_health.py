@@ -2,7 +2,7 @@ from deckflix_app.library_manager import (
     library_summary,
     calculate_health_score,
 )
-
+from deckflix_app.library_manager import duplicate_examples
 
 def show_library_health(movies_path, tv_path):
     summary = library_summary(
@@ -21,6 +21,15 @@ def show_library_health(movies_path, tv_path):
     print("──────────────")
     print(f"Total Movies          : {summary['movies_total']}")
     print(f"Duplicate Titles      : {len(summary['movie_duplicates'])}")
+    if summary["movie_duplicates"]:
+    print()
+    print("Example Duplicate Titles")
+    print("────────────────────────")
+
+    for title in duplicate_examples(summary["movie_duplicates"]):
+        print(f"• {title}")
+
+    print()
     print(f"Missing Years         : {len(summary['missing_year_movies'])}")
     print()
 
