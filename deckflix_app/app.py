@@ -125,11 +125,14 @@ while True:
     choice = input("Select option: ").strip()
 
     if choice == "1":
-        run_import(
-            queue,
-            MOVIES,
-            TV,
-        )
+       success = run_import(
+    queue,
+    MOVIES,
+    TV,
+)
+
+if success:
+    input("\nPress Enter after verifying the copy...")
         break
 
     elif choice == "2":
