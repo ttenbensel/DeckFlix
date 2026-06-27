@@ -88,16 +88,22 @@ def library_summary(movies_path, tv_path):
 
 def calculate_health_score(summary):
     """
-    Calculate a simple library health score.
+    Calculate a balanced library health score.
 
-    Starts at 100 and deducts points for issues.
+    This first version is deliberately conservative because
+    DeckFlix is still learning the library.
     """
 
     score = 100
 
-    score -= min(len(summary["movie_duplicates"]), 20)
-    score -= min(len(summary["tv_duplicates"]), 10)
-    score -= min(len(summary["missing_year_movies"]), 10)
-    score -= min(len(summary["unknown_quality"]) // 10, 20)
+    movie_duplicate_penalty = min(len(summary["movie_duplicates"]) // 5, 12)
+    tv_duplicate_penalty = min(len(summary["tv_duplicates"]) // 3, 8)
+    missing_year_penalty = min(len(summary["missing_year_movies"]) // 3, 8)
+    unknown_quality_penalty = min(len(summary["unknown_quality"]) // 25, 15)
+
+    score -= movie_duplicate_penalty
+    score -= tv_duplicate_penalty
+    score -= missing_year_penalty
+    score -= unknown_quality_penalty
 
     return max(score, 0)
