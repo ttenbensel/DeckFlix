@@ -107,3 +107,26 @@ def calculate_health_score(summary):
     score -= unknown_quality_penalty
 
     return max(score, 0)
+
+def duplicate_examples(duplicates, limit=10):
+    """
+    Return readable duplicate titles.
+
+    Sort alphabetically and limit the output so the
+    Library Health screen stays tidy.
+    """
+
+    examples = []
+
+    for key in sorted(duplicates.keys()):
+        if isinstance(key, tuple):
+            title = key[0]
+
+            if len(key) > 1 and key[1]:
+                title = f"{title} ({key[1]})"
+        else:
+            title = str(key)
+
+        examples.append(title)
+
+    return examples[:limit]
