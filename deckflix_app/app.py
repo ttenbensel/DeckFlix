@@ -21,7 +21,9 @@ def logo():
     print(f"                 ⚓ {APP_NAME.upper()} ⚓")
     print("        Shipboard Media Management")
     print("═══════════════════════════════════════════════")
-    print(f"Version {VERSION} - {CODENAME}")
+    print(f"Version {VERSION}")
+    print(f"Codename: {CODENAME}")
+    print()
 
 
 def build_current_queue():
