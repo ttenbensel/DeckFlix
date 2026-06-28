@@ -64,6 +64,8 @@ def size_gb(path):
         return Path(path).stat().st_size / 1024**3
     except Exception:
         return 0
+        def folder_name(item):
+    return Path(item.path).parent.name
 
 
 def star_rating(score):
@@ -167,12 +169,26 @@ def show_group_recommendation(ranked):
 
         print("✓ Same resolution")
         print("✓ Same source")
-        print("✓ Same codec")
-        print("✓ Same quality score")
         print()
         print("These files appear to be the same release.")
         print()
+
+        print("Folder Comparison")
+        print("─────────────────")
+        print()
+
+        print("KEEP")
+        print(f"📁 {folder_name(best)}")
+        print()
+
+        for duplicate in duplicates:
+            print("REVIEW")
+            print(f"📁 {folder_name(duplicate)}")
+            print()
+
         print(f"Potential Saving : {saving:.2f} GB")
+        print()
+        return
         print()
         return
 
