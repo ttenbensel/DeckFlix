@@ -64,7 +64,9 @@ def size_gb(path):
         return Path(path).stat().st_size / 1024**3
     except Exception:
         return 0
-        def folder_name(item):
+
+
+def folder_name(item):
     return Path(item.path).parent.name
 
 
