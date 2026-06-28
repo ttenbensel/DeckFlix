@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from deckflix_app.library_manager import library_summary
 from deckflix_app.quality import quality_label
 
@@ -15,6 +17,13 @@ def format_duplicate_name(key):
     return str(key)
 
 
+def size_gb(path):
+    try:
+        return Path(path).stat().st_size / 1024**3
+    except Exception:
+        return 0
+
+
 def star_rating(score):
     if score >= 90:
         return "★★★★★"
@@ -25,6 +34,72 @@ def star_rating(score):
     if score >= 40:
         return "★★☆☆☆"
     return "★☆☆☆☆"
+
+
+def same_release(first, second):
+    return (
+        first.resolution == second.resolution
+        and first.source == second.source
+        and first.codec == second.codec
+        and first.quality_score == second.quality_score
+    )
+
+
+def recommendation_for_item(item, best):
+    if item == best:
+        return "KEEP"
+
+    if same_release(item, best):
+        return "REVIEW DUPLICATE"
+
+    if item.quality_score >= best.quality_score - 10:
+        return "OPTIONAL"
+
+    return "REVIEW"
+
+
+def show_group_recommendation(ranked):
+    best = ranked[0]
+    duplicates = [
+        item
+        for item in ranked[1:]
+        if same_release(item, best)
+    ]
+
+    print("Recommendation")
+    print("══════════════")
+    print()
+
+    if duplicates:
+        saving = sum(size_gb(item.path) for item in duplicates)
+
+        print("⚠ REVIEW DUPLICATE")
+        print()
+        print("Reason")
+        print("──────")
+        print("✓ Same resolution")
+        print("✓ Same source")
+        print("✓ Same codec")
+        print("✓ Same quality score")
+        print()
+        print("These files appear to be the same release.")
+        print()
+        print(f"Potential Saving : {saving:.2f} GB")
+        print()
+        return
+
+    removable = ranked[1:]
+    saving = sum(size_gb(item.path) for item in removable)
+
+    print("✓ KEEP BEST COPY")
+    print()
+    print("Reason")
+    print("──────")
+    print("Highest quality score found.")
+    print()
+    print(f"Best Copy         : {quality_label(best)}")
+    print(f"Potential Saving : {saving:.2f} GB")
+    print()
 
 
 def show_duplicate_group(title, items):
@@ -41,19 +116,20 @@ def show_duplicate_group(title, items):
     print("═" * len(display_name))
     print()
 
+    show_group_recommendation(ranked)
+
     for index, item in enumerate(ranked, start=1):
-        if index == 1:
-            recommendation = "KEEP"
-        elif item.quality_score >= ranked[0].quality_score - 10:
-            recommendation = "OPTIONAL"
-        else:
-            recommendation = "REVIEW"
+        recommendation = recommendation_for_item(
+            item,
+            ranked[0],
+        )
 
         print(f"Copy {index}")
         print("──────")
         print(f"Rating          : {star_rating(item.quality_score)}")
         print(f"Quality         : {quality_label(item)}")
         print(f"Score           : {item.quality_score}")
+        print(f"Size            : {size_gb(item.path):.2f} GB")
         print(f"Recommendation  : {recommendation}")
         print(f"File            : {item.path}")
         print()
