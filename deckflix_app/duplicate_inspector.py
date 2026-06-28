@@ -9,12 +9,45 @@ def format_duplicate_name(key):
         title = key[0]
         year = key[1]
 
+        title = format_title(title)
+
         if year:
             return f"{title} ({year})"
 
         return title
 
-    return str(key)
+    return format_title(str(key))
+
+
+def format_title(title):
+    small_words = {
+        "and",
+        "or",
+        "of",
+        "the",
+        "a",
+        "an",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "from",
+        "with",
+    }
+
+    words = str(title).replace("_", " ").split()
+    formatted = []
+
+    for index, word in enumerate(words):
+        lower = word.lower()
+
+        if index != 0 and lower in small_words:
+            formatted.append(lower)
+        else:
+            formatted.append(lower.capitalize())
+
+    return " ".join(formatted)
 
 
 def size_gb(path):
@@ -36,6 +69,13 @@ def star_rating(score):
     return "★☆☆☆☆"
 
 
+def confidence_bar(percent):
+    filled = round(percent / 5)
+    empty = 20 - filled
+
+    return "█" * filled + "░" * empty
+
+
 def same_release(first, second):
     return (
         first.resolution == second.resolution
@@ -43,6 +83,31 @@ def same_release(first, second):
         and first.codec == second.codec
         and first.quality_score == second.quality_score
     )
+
+
+def same_filename(first, second):
+    return first.path.name == second.path.name
+
+
+def confidence_score(best, duplicates):
+    if not duplicates:
+        return 75
+
+    score = 70
+
+    for duplicate in duplicates:
+        if same_filename(best, duplicate):
+            score += 10
+        if best.resolution == duplicate.resolution:
+            score += 5
+        if best.source == duplicate.source:
+            score += 5
+        if best.codec == duplicate.codec:
+            score += 5
+        if best.quality_score == duplicate.quality_score:
+            score += 5
+
+    return min(score, 100)
 
 
 def recommendation_for_item(item, best):
@@ -56,6 +121,13 @@ def recommendation_for_item(item, best):
         return "OPTIONAL"
 
     return "REVIEW"
+
+
+def show_confidence(percent):
+    print("Confidence")
+    print("──────────")
+    print(f"{confidence_bar(percent)} {percent}%")
+    print()
 
 
 def show_group_recommendation(ranked):
@@ -72,11 +144,18 @@ def show_group_recommendation(ranked):
 
     if duplicates:
         saving = sum(size_gb(item.path) for item in duplicates)
+        confidence = confidence_score(best, duplicates)
 
         print("⚠ REVIEW DUPLICATE")
         print()
+        show_confidence(confidence)
+
         print("Reason")
         print("──────")
+
+        if any(same_filename(best, item) for item in duplicates):
+            print("✓ Same filename")
+
         print("✓ Same resolution")
         print("✓ Same source")
         print("✓ Same codec")
@@ -93,6 +172,7 @@ def show_group_recommendation(ranked):
 
     print("✓ KEEP BEST COPY")
     print()
+    show_confidence(75)
     print("Reason")
     print("──────")
     print("Highest quality score found.")
