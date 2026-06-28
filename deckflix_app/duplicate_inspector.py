@@ -68,6 +68,8 @@ def size_gb(path):
 
 def folder_name(item):
     return Path(item.path).parent.name
+def folder_name(item):
+    return Path(item.path).parent.name
 
 
 def star_rating(score):
