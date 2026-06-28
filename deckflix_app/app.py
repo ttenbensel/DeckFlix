@@ -267,19 +267,19 @@ def main():
             receive_shuttle()
         elif choice == "3":
             import_queue()
-        elif choice == "4":
+              elif choice == "4":
             library_health()
-        :
-       elif choice == "5":
-    duplicate_inspector()
-elif choice == "6":
-    repair_preview()
-elif choice == "7":
-    ship_mode()
-elif choice == "8":
-    print("Securing DeckFlix console.")
-    break
+        elif choice == "5":
+            duplicate_inspector()
+        elif choice == "6":
+            repair_preview()
+        elif choice == "7":
+            ship_mode()
+        elif choice == "8":
+            print("Securing DeckFlix console.")
+            break
         else:
+            print("Invalid option.")
             print("Invalid option.")
 
         input("\nPress Enter to return to menu...")
