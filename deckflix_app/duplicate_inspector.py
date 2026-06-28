@@ -5,6 +5,8 @@ from deckflix_app.quality import quality_label
 
 
 def format_duplicate_name(key):
+    text = str(key)
+
     if isinstance(key, tuple):
         title = key[0]
         year = key[1]
@@ -16,7 +18,14 @@ def format_duplicate_name(key):
 
         return title
 
-    return format_title(str(key))
+    parts = text.split()
+
+    if parts and parts[-1].isdigit() and len(parts[-1]) == 4:
+        year = parts[-1]
+        title = " ".join(parts[:-1])
+        return f"{format_title(title)} ({year})"
+
+    return format_title(text)
 
 
 def format_title(title):
