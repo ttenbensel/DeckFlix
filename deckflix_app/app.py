@@ -250,6 +250,7 @@ def ship_mode():
 
 def main():
     while True:
+        logo()
         print("1. Bridge Dashboard")
         print("2. Receive Shuttle")
         print("3. Import Queue")
@@ -258,6 +259,7 @@ def main():
         print("6. Repair Preview")
         print("7. Ship Mode")
         print("8. Exit")
+        print()
 
         choice = input("Select option: ").strip()
 
@@ -267,7 +269,7 @@ def main():
             receive_shuttle()
         elif choice == "3":
             import_queue()
-              elif choice == "4":
+        elif choice == "4":
             library_health()
         elif choice == "5":
             duplicate_inspector()
@@ -279,6 +281,9 @@ def main():
             print("Securing DeckFlix console.")
             break
         else:
+            print("Invalid option.")
+
+        input("\nPress Enter to return to menu...")
             print("Invalid option.")
             print("Invalid option.")
 
