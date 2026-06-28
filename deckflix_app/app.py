@@ -284,10 +284,7 @@ def main():
             print("Invalid option.")
 
         input("\nPress Enter to return to menu...")
-            print("Invalid option.")
-            print("Invalid option.")
-
-        input("\nPress Enter to return to menu...")
+        
 
 def duplicate_inspector():
     show_duplicate_inspector(
