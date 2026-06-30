@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 
 
 QUARANTINE = Path("/mnt/dest4tb/deckflix-quarantine")
@@ -6,9 +7,9 @@ QUARANTINE = Path("/mnt/dest4tb/deckflix-quarantine")
 
 def build_repair_preview(folder):
     """
-    Build a dry-run repair preview.
+    Build a repair preview.
 
-    Nothing is moved or deleted.
+    Nothing is moved or deleted by this function.
     """
 
     folder = Path(folder)
@@ -52,3 +53,40 @@ def show_repair_preview(folder):
     print()
 
     input("Press Enter to return...")
+
+
+def quarantine_folder(folder):
+    """
+    Move a folder into the DeckFlix quarantine folder.
+
+    This does not delete anything.
+    """
+
+    source = Path(folder)
+    destination = QUARANTINE / source.name
+
+    if not source.exists():
+        return {
+            "success": False,
+            "message": "Source folder does not exist.",
+            "source": source,
+            "destination": destination,
+        }
+
+    if destination.exists():
+        return {
+            "success": False,
+            "message": "Destination already exists in quarantine.",
+            "source": source,
+            "destination": destination,
+        }
+
+    QUARANTINE.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(source), str(destination))
+
+    return {
+        "success": True,
+        "message": "Folder moved to quarantine.",
+        "source": source,
+        "destination": destination,
+    }
