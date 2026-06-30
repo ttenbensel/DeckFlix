@@ -34,8 +34,23 @@ def show_repair_queue():
 
     choice = input("Select option: ").strip().lower()
 
-    if choice == "c":
+   if choice == "c":
+    print()
+    print("Clear Repair Queue")
+    print("──────────────────")
+    print()
+    print(f"This will remove {len(queue)} item(s) from the queue.")
+    print("No files will be moved or deleted.")
+    print()
+
+    confirm = input("Continue? [Y/N]: ").strip().lower()
+
+    if confirm == "y":
         clear()
         print()
         print("✓ Repair queue cleared.")
-        input("\nPress Enter to return...")
+    else:
+        print()
+        print("Queue unchanged.")
+
+    input("\nPress Enter to return...")
