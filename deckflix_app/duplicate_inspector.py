@@ -240,17 +240,17 @@ def show_duplicate_group(title, items):
         print(f"File            : {item.path}")
         print()
 
-        print("Nothing has been changed.")
-        print()
-        
-        choice = input(
-            "[R] Repair Preview   [Enter] Back : "
-        ).strip().lower()
-        
-        if choice == "r":
-            show_repair_preview(
-                Path(ranked[1].path).parent
-            )
+    print("Nothing has been changed.")
+    print()
+    
+    choice = input(
+        "[R] Repair Preview   [Enter] Back : "
+    ).strip().lower()
+    
+    if choice == "r":
+        show_repair_preview(
+            Path(ranked[1].path).parent
+        )
 
 
 def show_duplicate_inspector(movies_path, tv_path):
