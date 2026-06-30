@@ -87,8 +87,9 @@ def quarantine_folder(folder):
     
     write_metadata(
         destination,
+        original_path=source,
         reason="Duplicate Release",
-    )
+)
     
     return {
         "success": True,
