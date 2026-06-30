@@ -1,5 +1,6 @@
 from pathlib import Path
 import shutil
+from deckflix_app.quarantine_metadata import write_metadata
 
 
 QUARANTINE = Path("/mnt/dest4tb/deckflix-quarantine")
@@ -83,7 +84,12 @@ def quarantine_folder(folder):
 
     QUARANTINE.mkdir(parents=True, exist_ok=True)
     shutil.move(str(source), str(destination))
-
+    
+    write_metadata(
+        destination,
+        reason="Duplicate Release",
+    )
+    
     return {
         "success": True,
         "message": "Folder moved to quarantine.",
