@@ -250,13 +250,13 @@ def show_duplicate_group(title, items):
     ).strip().lower()
 
     if choice == "a":
-    add_to_queue(Path(ranked[1].path).parent)
+        add_to_queue(Path(ranked[1].path).parent)
 
-    print()
-    print("✓ Added to Repair Queue")
-    print(f"Items in Queue : {queue_count()}")
-    input("\nPress Enter to continue...")
-    
+        print()
+        print("✓ Added to Repair Queue")
+        print(f"Items in Queue : {queue_count()}")
+        input("\nPress Enter to continue...")
+
     if choice == "r":
         show_repair_preview(
             Path(ranked[1].path).parent
