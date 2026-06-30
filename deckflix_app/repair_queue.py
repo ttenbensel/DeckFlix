@@ -16,3 +16,21 @@ def items():
 
 def count():
     return len(repair_queue)
+
+from pathlib import Path
+
+
+def estimated_recovery():
+    total = 0
+
+    for folder in repair_queue:
+        folder = Path(folder)
+
+        if not folder.exists():
+            continue
+
+        for file in folder.rglob("*"):
+            if file.is_file():
+                total += file.stat().st_size
+
+    return total / 1024**3
