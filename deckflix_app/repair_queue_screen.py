@@ -23,8 +23,8 @@ def show_repair_queue():
     print(f"Items Queued       : {len(queue)}")
     print(f"Estimated Recovery : {estimated_recovery():.2f} GB")
     print()
-    
-     for index, folder in enumerate(queue, start=1):
+
+    for index, folder in enumerate(queue, start=1):
         print(f"{index}. {Path(folder).name}")
 
     print()
