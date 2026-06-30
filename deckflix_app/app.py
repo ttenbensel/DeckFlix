@@ -10,6 +10,7 @@ from deckflix_app.import_runner import run_import
 from deckflix_app.version import APP_NAME, VERSION, CODENAME
 from deckflix_app.library_health import show_library_health
 from deckflix_app.duplicate_inspector import show_duplicate_inspector
+from deckflix_app.repair_queue_screen import show_repair_queue
 
 
 MOVIES = Path("/mnt/dest4tb/movie")
@@ -257,7 +258,7 @@ def main():
         print("3. Import Queue")
         print("4. Library Health")
         print("5. Duplicate Inspector")
-        print("6. Repair Preview")
+        print("6. show_repair_queue")
         print("7. Ship Mode")
         print("8. Exit")
         print()
