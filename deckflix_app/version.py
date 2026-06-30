@@ -5,5 +5,5 @@ Update this file for every release.
 """
 
 APP_NAME = "DeckFlix"
-VERSION = "0.7.0-alpha"
-CODENAME = "First Import"
+VERSION = "0.8.0"
+CODENAME = "Safe Repair Preview"
