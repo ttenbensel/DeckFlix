@@ -258,7 +258,7 @@ def main():
         print("3. Import Queue")
         print("4. Library Health")
         print("5. Duplicate Inspector")
-        print("6. show_repair_queue")
+        print("6. Repair Queue")
         print("7. Ship Mode")
         print("8. Exit")
         print()
@@ -281,7 +281,7 @@ def main():
             duplicate_inspector()
 
         elif choice == "6":
-            repair_preview()
+            show_repair_queue()
 
         elif choice == "7":
             ship_mode()
