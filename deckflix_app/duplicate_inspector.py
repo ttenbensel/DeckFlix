@@ -2,6 +2,7 @@ from pathlib import Path
 
 from deckflix_app.library_manager import library_summary
 from deckflix_app.quality import quality_label
+from deckflix_app.repair_engine import show_repair_preview
 
 
 def format_duplicate_name(key):
@@ -239,7 +240,17 @@ def show_duplicate_group(title, items):
         print(f"File            : {item.path}")
         print()
 
-    print("Nothing has been changed.")
+        print("Nothing has been changed.")
+        print()
+        
+        choice = input(
+            "[R] Repair Preview   [Enter] Back : "
+        ).strip().lower()
+        
+        if choice == "r":
+            show_repair_preview(
+                Path(ranked[1].path).parent
+            )
 
 
 def show_duplicate_inspector(movies_path, tv_path):
