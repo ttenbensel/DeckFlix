@@ -68,8 +68,6 @@ def size_gb(path):
 
 def folder_name(item):
     return Path(item.path).parent.name
-def folder_name(item):
-    return Path(item.path).parent.name
 
 
 def star_rating(score):
@@ -173,8 +171,8 @@ def show_group_recommendation(ranked):
 
         print("✓ Same resolution")
         print("✓ Same source")
-        print()
-        print("These files appear to be the same release.")
+        print("✓ Same codec")
+        print("✓ Same quality score")
         print()
 
         print("Folder Comparison")
@@ -191,8 +189,6 @@ def show_group_recommendation(ranked):
             print()
 
         print(f"Potential Saving : {saving:.2f} GB")
-        print()
-        return
         print()
         return
 
