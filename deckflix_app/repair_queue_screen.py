@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from deckflix_app.repair_queue import items, clear
+from deckflix_app.repair_queue import (
+    items,
+    clear,
+    estimated_recovery,
+)
 
 
 def show_repair_queue():
@@ -16,7 +20,9 @@ def show_repair_queue():
         input("\nPress Enter to return...")
         return
 
-    print(f"Items Queued : {len(queue)}")
+    print(
+    f"Estimated Recovery : {estimated_recovery():.2f} GB"
+)
     print()
 
     for index, folder in enumerate(queue, start=1):
