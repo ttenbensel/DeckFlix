@@ -1,18 +1,17 @@
 from pathlib import Path
 import shutil
-from deckflix_app.quarantine_metadata import write_metadata
+
+from deckflix_app.quarantine_metadata import (
+    metadata_file,
+    read_metadata,
+    write_metadata,
+)
 
 
 QUARANTINE = Path("/mnt/dest4tb/deckflix-quarantine")
 
 
 def build_repair_preview(folder):
-    """
-    Build a repair preview.
-
-    Nothing is moved or deleted by this function.
-    """
-
     folder = Path(folder)
 
     return {
@@ -57,12 +56,6 @@ def show_repair_preview(folder):
 
 
 def quarantine_folder(folder):
-    """
-    Move a folder into the DeckFlix quarantine folder.
-
-    This does not delete anything.
-    """
-
     source = Path(folder)
     destination = QUARANTINE / source.name
 
@@ -84,16 +77,54 @@ def quarantine_folder(folder):
 
     QUARANTINE.mkdir(parents=True, exist_ok=True)
     shutil.move(str(source), str(destination))
-    
+
     write_metadata(
         destination,
         original_path=source,
         reason="Duplicate Release",
-)
-    
+    )
+
     return {
         "success": True,
         "message": "Folder moved to quarantine.",
+        "source": source,
+        "destination": destination,
+    }
+
+
+def restore_folder(folder):
+    source = Path(folder)
+    metadata = read_metadata(source)
+    destination = Path(metadata["original_path"])
+
+    if not source.exists():
+        return {
+            "success": False,
+            "message": "Quarantined folder does not exist.",
+            "source": source,
+            "destination": destination,
+        }
+
+    if destination.exists():
+        return {
+            "success": False,
+            "message": "Original destination already exists.",
+            "source": source,
+            "destination": destination,
+        }
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(source), str(destination))
+
+    meta = metadata_file(destination)
+    old_meta = metadata_file(source)
+
+    if old_meta.exists():
+        shutil.move(str(old_meta), str(meta))
+
+    return {
+        "success": True,
+        "message": "Folder restored from quarantine.",
         "source": source,
         "destination": destination,
     }
