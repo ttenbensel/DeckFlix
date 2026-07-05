@@ -16,11 +16,11 @@ def write_metadata(
     folder = Path(folder)
 
     data = {
-    "version": 1,
-    "original_path": str(original_path),
-    "quarantined": datetime.now().isoformat(timespec="seconds"),
-    "reason": reason,
-}
+        "version": 1,
+        "original_path": str(original_path),
+        "quarantined": datetime.now().isoformat(timespec="seconds"),
+        "reason": reason,
+    }
 
     with metadata_file(folder).open("w") as f:
         json.dump(data, f, indent=4)
