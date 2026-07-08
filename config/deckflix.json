@@ -1,0 +1,24 @@
+{
+    "version": 2,
+
+    "storage": {
+        "shuttle": "/mnt/source2tb",
+
+        "libraries": [
+            {
+                "name": "Library 1",
+                "path": "/mnt/library1",
+                "enabled": true
+            },
+            {
+                "name": "Library 2",
+                "path": "/mnt/library2",
+                "enabled": true
+            }
+        ]
+    },
+
+    "application": {
+        "log_level": "INFO"
+    }
+}
