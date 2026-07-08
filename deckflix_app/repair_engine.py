@@ -6,10 +6,9 @@ from deckflix_app.quarantine_metadata import (
     read_metadata,
     write_metadata,
 )
+from deckflix_app.config.config import get_quarantine_path
 
-
-QUARANTINE = Path("/mnt/dest4tb/deckflix-quarantine")
-
+QUARANTINE = get_quarantine_path()
 
 def build_repair_preview(folder):
     folder = Path(folder)

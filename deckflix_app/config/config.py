@@ -43,3 +43,6 @@ def get_tv_paths():
 
 def get_shuttle_path():
     return Path(_config["storage"]["shuttle"])
+
+def get_quarantine_path():
+    return Path(_config["repair"]["quarantine"])

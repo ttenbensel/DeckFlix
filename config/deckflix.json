@@ -18,6 +18,10 @@
         ]
     },
 
+    "repair": {
+        "quarantine": "/mnt/library1/deckflix-quarantine"
+    },
+
     "application": {
         "log_level": "INFO"
     }
