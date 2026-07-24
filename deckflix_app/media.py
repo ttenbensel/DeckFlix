@@ -113,6 +113,15 @@ def clean_title(text):
     name = re.sub(r"\([^\)]*\)", " ", name)
     name = re.sub(r"\b(19|20)\d{2}\b", " ", name)
 
+    # Remove audio and channel-layout release tags.
+    name = re.sub(
+        r"\b(?:aac|ac3|eac3|ddp?|dts|truehd|atmos)"
+        r"(?:\d+(?:[._]\d+)?)?\b",
+        " ",
+        name,
+        flags=re.IGNORECASE,
+    )
+
     remove_terms = [
         "2160p", "1080p", "720p", "480p", "4k",
         "webrip", "web-dl", "webdl", "bluray", "blu-ray",
@@ -196,7 +205,7 @@ def inspect_media(path):
         title_source = path.parent.parent.name if path.parent.parent else path.parent.name
     else:
         media_type = "movie"
-        title_source = path.parent.name
+        title_source = path.stem
 
     return MediaInfo(
         path=path,

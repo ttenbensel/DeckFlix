@@ -1,9 +1,13 @@
 from collections import Counter, defaultdict
 from pathlib import Path
+import shutil
 
 from deckflix_app.media import inspect_media
 from deckflix_app.scanner import scan_videos
-
+from deckflix_app.config.config import (
+    get_enabled_libraries,
+    get_shuttle_path,
+)
 
 def scan_library(movies_path, tv_path):
     movie_files = scan_videos(movies_path)
@@ -130,3 +134,112 @@ def duplicate_examples(duplicates, limit=10):
         examples.append(title)
 
     return examples[:limit]
+def get_library_status(library):
+    """
+    Return storage and availability information for one configured library.
+    """
+
+    root = Path(library["path"])
+    movie_path = root / "movie"
+    tv_path = root / "tv"
+    online = root.exists() and root.is_dir()
+
+    status = {
+        "name": library["name"],
+        "path": root,
+        "movie_path": movie_path,
+        "tv_path": tv_path,
+        "enabled": library.get("enabled", True),
+        "online": online,
+        "total_bytes": 0,
+        "used_bytes": 0,
+        "free_bytes": 0,
+        "used_percent": 0.0,
+    }
+
+    if not online:
+        return status
+
+    usage = shutil.disk_usage(root)
+
+    status["total_bytes"] = usage.total
+    status["used_bytes"] = usage.used
+    status["free_bytes"] = usage.free
+
+    if usage.total:
+        status["used_percent"] = round(
+            usage.used / usage.total * 100,
+            1,
+        )
+
+    return status
+
+
+def get_all_library_statuses():
+    """
+    Return status information for every enabled library.
+    """
+
+    return [
+        get_library_status(library)
+        for library in get_enabled_libraries()
+    ]
+
+
+def best_import_library(required_bytes=0):
+    """
+    Select the online enabled library with the most available space.
+
+    Return None when no library has enough free space.
+    """
+
+    candidates = [
+        status
+        for status in get_all_library_statuses()
+        if status["online"] and status["free_bytes"] >= required_bytes
+    ]
+
+    if not candidates:
+        return None
+
+    return max(
+        candidates,
+        key=lambda status: status["free_bytes"],
+    )
+
+
+def shuttle_connected():
+    """
+    Return True when the configured shuttle path is available.
+    """
+
+    shuttle = get_shuttle_path()
+    return shuttle.exists() and shuttle.is_dir()
+
+
+def scan_all_libraries():
+    """
+    Scan every enabled, online library and return combined results.
+    """
+
+    results = {}
+
+    for library in get_enabled_libraries():
+        status = get_library_status(library)
+
+        if not status["online"]:
+            results[library["name"]] = {
+                "status": status,
+                "scan": None,
+            }
+            continue
+
+        results[library["name"]] = {
+            "status": status,
+            "scan": scan_library(
+                status["movie_path"],
+                status["tv_path"],
+            ),
+        }
+
+    return results
