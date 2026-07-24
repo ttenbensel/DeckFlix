@@ -1,6 +1,7 @@
 
 from deckflix_app.library_manager import scan_all_libraries
-from deckflix_app.services.file_hash import sha256_file
+from deckflix_app.services.file_hash import cached_sha256_file
+from deckflix_app.services.fingerprint_store import FingerprintStore
 from deckflix_app.models.media import IndexedMedia
 
 
@@ -21,6 +22,7 @@ class MediaIndex:
         """
 
         confirmed = []
+        store = FingerprintStore()
 
         for key, items in self.find_movie_duplicates().items():
             size_groups = {}
@@ -39,7 +41,7 @@ class MediaIndex:
 
                 for item in candidates:
                     try:
-                        digest = sha256_file(item.path)
+                        digest, cached = cached_sha256_file(item.path, store)
                     except OSError:
                         continue
 
@@ -81,7 +83,7 @@ class MediaIndex:
                         path=item.path,
                         resolution=item.resolution,
                         year=item.year,
-			size=item.path.stat().st_size if item.path.exists() else 0,
+            size=item.path.stat().st_size if item.path.exists() else 0,
                     )
                 )
 
@@ -93,8 +95,8 @@ class MediaIndex:
                         library=library_name,
                         path=item.path,
                         resolution=item.resolution,
-                        year=item.year,	
-			size=item.path.stat().st_size if item.path.exists() else 0,
+                        year=item.year, 
+            size=item.path.stat().st_size if item.path.exists() else 0,
                     )
                 )
     def classify_movie_duplicates(self):
