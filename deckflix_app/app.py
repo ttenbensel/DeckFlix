@@ -21,6 +21,34 @@ MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
 SHUTTLE = Path("/mnt/source2tb")
 
+SESSION_MEDIA_INDEX = None
+
+
+def get_session_media_index(refresh=False):
+    """
+    Return the session-wide MediaIndex.
+
+    The library is scanned only on first use or when refresh=True.
+    """
+
+    global SESSION_MEDIA_INDEX
+
+    if SESSION_MEDIA_INDEX is None or refresh:
+        print()
+        print("Scanning media libraries...")
+
+        index = MediaIndex()
+        index.rebuild()
+
+        SESSION_MEDIA_INDEX = index
+
+        print(
+            f"Scan complete: "
+            f"{index.movie_count} movies, "
+            f"{index.tv_count} TV episodes"
+        )
+
+    return SESSION_MEDIA_INDEX
 
 def logo():
     print("═══════════════════════════════════════════════")
@@ -310,15 +338,68 @@ def duplicate_inspector():
 
     input("\nPress Enter to return to the main menu...")
 
+def release_actions(index, release):
+    """
+    Interactive actions for a single release.
+    Read-only.
+    """
+
+    while True:
+        print()
+        print("Release Actions")
+        print("═══════════════")
+
+        title, year, _ = release.key
+
+        print()
+        print(f"{title.title()} ({year or 'unknown'})")
+        print()
+
+        print("1. View Report")
+        print("2. Compare Files")
+        print("3. Simulate Cleanup")
+        print("4. Add to Repair Queue")
+        print()
+        print("0. Back")
+        print()
+
+        choice = input("Select option: ").strip()
+
+        if choice == "0":
+            return
+
+        elif choice == "1":
+            print()
+            print("Checking fingerprints...")
+
+            index.confirm_release_fingerprints([release])
+
+            report = build_release_report(release)
+            show_release_report(report)
+
+            input("\nPress Enter...")
+
+        elif choice == "2":
+            print("\nCompare Files coming soon.")
+            input("\nPress Enter...")
+
+        elif choice == "3":
+            print("\nSimulate Cleanup coming soon.")
+            input("\nPress Enter...")
+
+        elif choice == "4":
+            print("\nRepair Queue integration coming soon.")
+            input("\nPress Enter...")
+
 def release_inspector():
     """
     Interactive Release Inspector.
-    Read-only. Nothing is modified.
+
+    Uses the session-wide MediaIndex so repeated visits do not
+    rescan the library. Read-only; nothing is modified.
     """
 
-    index = MediaIndex()
-    index.rebuild()
-
+    index = get_session_media_index()
     releases = index.build_movie_releases()
 
     if not releases:
@@ -335,11 +416,7 @@ def release_inspector():
         for number, release in enumerate(releases, start=1):
             title, year, _ = release.key
 
-            status = (
-                "✓"
-                if release.confirmed
-                else "?"
-            )
+            status = "✓" if release.confirmed else "?"
 
             print(
                 f"{number:2}. {status} "
@@ -347,30 +424,30 @@ def release_inspector():
             )
 
         print()
+        print("R. Refresh library scan")
         print("0. Return")
         print()
 
-        choice = input("Select release: ").strip()
+        choice = input("Select release: ").strip().lower()
 
         if choice == "0":
             break
 
+        if choice == "r":
+            index = get_session_media_index(refresh=True)
+            releases = index.build_movie_releases()
+            continue
+
         if not choice.isdigit():
+            print("Invalid option.")
             continue
 
         number = int(choice)
 
-        if not (1 <= number <= len(releases)):
+        if not 1 <= number <= len(releases):
+            print("Invalid option.")
             continue
 
         release = releases[number - 1]
 
-        print()
-        print("Checking fingerprints...")
-
-        index.confirm_release_fingerprints([release])
-
-        report = build_release_report(release)
-        show_release_report(report)
-
-        input("\nPress Enter...")
+        release_actions(index, release)
