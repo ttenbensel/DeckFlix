@@ -16,6 +16,10 @@ from deckflix_app.services.release_inspector import (
     show_release_report,
 )
 from deckflix_app.services.media_index import MediaIndex
+from deckflix_app.services.file_compare import (
+    compare_release_files,
+    show_file_comparison,
+)
 
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
@@ -380,7 +384,14 @@ def release_actions(index, release):
             input("\nPress Enter...")
 
         elif choice == "2":
-            print("\nCompare Files coming soon.")
+            print()
+            print("Checking fingerprints...")
+
+            index.confirm_release_fingerprints([release])
+
+            result = compare_release_files(release)
+            show_file_comparison(result)
+
             input("\nPress Enter...")
 
         elif choice == "3":
