@@ -96,15 +96,17 @@ def recommendation_reasons(keep, others):
         reasons.append("REPACK release")
 
     if not reasons:
-        reasons.append("Manual review recommended")
-
+        reasons.append(
+            "Top-ranked files are equivalent; confirm with SHA-256"
+        )
     return reasons
 
 def recommend_duplicate_group(items):
     """
-    Recommend which duplicate candidate to keep.
+    Recommend the best release and separate tied copies from
+    lower-ranked alternatives.
 
-    This function is advisory only. It never moves or deletes files.
+    Advisory only. Nothing is moved or deleted.
     """
 
     if len(items) < 2:
@@ -117,15 +119,36 @@ def recommend_duplicate_group(items):
     )
 
     keep = ranked[0]
-    review = ranked[1:]
+    keep_rank = rank_media(keep)
+
+    equivalent_copies = [
+        item
+        for item in ranked[1:]
+        if rank_media(item) == keep_rank
+    ]
+
+    alternatives = [
+        item
+        for item in ranked[1:]
+        if rank_media(item) != keep_rank
+    ]
+
+    comparison_items = alternatives or equivalent_copies
 
     return {
         "keep": keep,
-        "review": review,
-        "reasons": recommendation_reasons(keep, review),
-        "confidence": recommendation_confidence(keep, review),
+        "equivalent_copies": equivalent_copies,
+        "alternatives": alternatives,
+        "review": ranked[1:],
+        "reasons": recommendation_reasons(
+            keep,
+            comparison_items,
+        ),
+        "confidence": recommendation_confidence(
+            keep,
+            comparison_items,
+        ),
     }
-
 
 def recommendation_confidence(keep, others):
     """
