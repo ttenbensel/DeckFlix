@@ -12,9 +12,11 @@ class IndexedMedia:
     year: int | None = None
 
     resolution: str = "unknown"
+    source: str = "unknown"
+    codec: str = "unknown"
+    quality_score: int = 0
     size: int = 0
 
-    codec: str | None = None
     audio: str | None = None
 
     @property

@@ -82,6 +82,9 @@ class MediaIndex:
                         library=library_name,
                         path=item.path,
                         resolution=item.resolution,
+                        source=item.source,
+                        codec=item.codec,
+                        quality_score=item.quality_score,
                         year=item.year,
             size=item.path.stat().st_size if item.path.exists() else 0,
                     )
