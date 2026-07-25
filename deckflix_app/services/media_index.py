@@ -3,7 +3,7 @@ from deckflix_app.library_manager import scan_all_libraries
 from deckflix_app.services.file_hash import cached_sha256_file
 from deckflix_app.services.fingerprint_store import FingerprintStore
 from deckflix_app.models.media import IndexedMedia
-
+from deckflix_app.models.release import MediaRelease
 
 
 class MediaIndex:
@@ -13,6 +13,38 @@ class MediaIndex:
     Every module should query this object instead of scanning
     the filesystem independently.
     """
+
+    def confirm_release_fingerprints(self, releases):
+        """
+        Confirm whether copies within each provisional release
+        are byte-identical.
+
+        Nothing is moved or deleted.
+        """
+
+        store = FingerprintStore()
+
+        for release in releases:
+            if release.copy_count < 2:
+                continue
+
+            hash_groups = {}
+
+            for item in release.copies:
+                try:
+                    digest, cached = cached_sha256_file(
+                        item.path,
+                        store,
+                    )
+                except OSError:
+                    continue
+
+                hash_groups.setdefault(digest, []).append(item)
+
+            if len(hash_groups) == 1:
+                release.confirmed_sha256 = next(iter(hash_groups))
+
+        return releases
 
     def confirm_exact_movie_duplicates(self):
         """
@@ -216,3 +248,25 @@ class MediaIndex:
         )
 
         return ordered[:limit]
+
+
+    def build_movie_releases(self):
+        """
+        Group duplicate movie candidates into provisional releases.
+
+        For now, one title/year duplicate group becomes one release.
+        Nothing is moved or deleted.
+        """
+
+        releases = []
+
+        for key, items in self.find_movie_duplicates().items():
+            releases.append(
+                MediaRelease(
+                    key=key,
+                    representative=items[0],
+                    copies=list(items),
+                )
+            )
+
+        return releases
