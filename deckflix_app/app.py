@@ -11,7 +11,11 @@ from deckflix_app.version import APP_NAME, VERSION, CODENAME
 from deckflix_app.library_health import show_library_health
 from deckflix_app.duplicate_inspector import show_duplicate_inspector
 from deckflix_app.repair_queue_screen import show_repair_queue
-
+from deckflix_app.services.release_inspector import (
+    build_release_report,
+    show_release_report,
+)
+from deckflix_app.services.media_index import MediaIndex
 
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
@@ -248,7 +252,6 @@ def ship_mode():
     print()
     print("Sea Mode controls coming next.")
 
-
 def main():
     while True:
         logo()
@@ -258,9 +261,10 @@ def main():
         print("3. Import Queue")
         print("4. Library Health")
         print("5. Duplicate Inspector")
-        print("6. Repair Queue")
-        print("7. Ship Mode")
-        print("8. Exit")
+        print("6. Release Inspector")
+        print("7. Repair Queue")
+        print("8. Ship Mode")
+        print("9. Exit")
         print()
 
         choice = input("Select option: ").strip()
@@ -281,12 +285,15 @@ def main():
             duplicate_inspector()
 
         elif choice == "6":
-            show_repair_queue()
+            release_inspector()
 
         elif choice == "7":
-            ship_mode()
+            show_repair_queue()
 
         elif choice == "8":
+            ship_mode()
+
+        elif choice == "9":
             print("Securing DeckFlix console.")
             break
 
@@ -294,7 +301,6 @@ def main():
             print("Invalid option.")
 
         input("\nPress Enter to return to menu...")
-        
 
 def duplicate_inspector():
     show_duplicate_inspector(
@@ -303,3 +309,68 @@ def duplicate_inspector():
     )
 
     input("\nPress Enter to return to the main menu...")
+
+def release_inspector():
+    """
+    Interactive Release Inspector.
+    Read-only. Nothing is modified.
+    """
+
+    index = MediaIndex()
+    index.rebuild()
+
+    releases = index.build_movie_releases()
+
+    if not releases:
+        print()
+        print("No releases require inspection.")
+        input("\nPress Enter...")
+        return
+
+    while True:
+        print()
+        print("Release Inspector")
+        print("═════════════════")
+
+        for number, release in enumerate(releases, start=1):
+            title, year, _ = release.key
+
+            status = (
+                "✓"
+                if release.confirmed
+                else "?"
+            )
+
+            print(
+                f"{number:2}. {status} "
+                f"{title.title()} ({year or 'unknown'})"
+            )
+
+        print()
+        print("0. Return")
+        print()
+
+        choice = input("Select release: ").strip()
+
+        if choice == "0":
+            break
+
+        if not choice.isdigit():
+            continue
+
+        number = int(choice)
+
+        if not (1 <= number <= len(releases)):
+            continue
+
+        release = releases[number - 1]
+
+        print()
+        print("Checking fingerprints...")
+
+        index.confirm_release_fingerprints([release])
+
+        report = build_release_report(release)
+        show_release_report(report)
+
+        input("\nPress Enter...")
