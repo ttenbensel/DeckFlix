@@ -20,7 +20,10 @@ from deckflix_app.services.file_compare import (
     compare_release_files,
     show_file_comparison,
 )
-
+from deckflix_app.services.cleanup_planner import (
+    build_cleanup_plan,
+    show_cleanup_plan,
+)
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
 SHUTTLE = Path("/mnt/source2tb")
@@ -395,9 +398,15 @@ def release_actions(index, release):
             input("\nPress Enter...")
 
         elif choice == "3":
-            print("\nSimulate Cleanup coming soon.")
-            input("\nPress Enter...")
+            print()
+            print("Checking fingerprints...")
 
+            index.confirm_release_fingerprints([release])
+
+            plan = build_cleanup_plan(release)
+            show_cleanup_plan(plan)
+
+            input("\nPress Enter...")
         elif choice == "4":
             print("\nRepair Queue integration coming soon.")
             input("\nPress Enter...")
