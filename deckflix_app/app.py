@@ -26,6 +26,11 @@ from deckflix_app.services.cleanup_planner import (
 )
 from deckflix_app.services.repair_queue import RepairQueue
 
+from deckflix_app.services.repair_executor import (
+    build_execution_preview,
+    show_execution_preview,
+)
+
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
 SHUTTLE = Path("/mnt/source2tb")
@@ -386,6 +391,20 @@ def session_repair_queue_screen():
 
     print()
     print("Read-only queue. Nothing has been changed.")
+    print()
+    print("D. Dry-run queued repairs")
+    print("0. Back")
+    print()
+
+    choice = input("Select option: ").strip().lower()
+
+    if choice == "d":
+        preview = build_execution_preview(
+            plans,
+            "/mnt/library1/deckflix-quarantine",
+        )
+        show_execution_preview(preview)
+        input("\nPress Enter...")
 
 def release_actions(index, release):
     """
