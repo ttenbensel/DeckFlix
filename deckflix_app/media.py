@@ -25,7 +25,18 @@ class MediaInfo:
             return f"{self.title.lower()} {self.year}"
 
         return self.title.lower()
+    @property
+    def size(self):
+        """
+        Return the current file size in bytes.
 
+        Missing or inaccessible files report zero.
+        """
+
+        try:
+            return self.path.stat().st_size
+        except OSError:
+            return 0
 
 def detect_year(text):
     match = re.search(r"\b(19|20)\d{2}\b", text)

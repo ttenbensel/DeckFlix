@@ -34,8 +34,8 @@ from deckflix_app.services.repair_executor import (
     show_execution_result,
 )
 
-MOVIES = Path("/mnt/dest4tb/movie")
-TV = Path("/mnt/dest4tb/tv")
+MOVIES = Path("/mnt/library1/movie")
+TV = Path("/mnt/library1/tv")
 SHUTTLE = Path("/mnt/source2tb")
 QUARANTINE_ROOT = Path("/mnt/library1/deckflix-quarantine")
 ENABLE_REAL_REPAIRS = False

@@ -5,7 +5,8 @@ from deckflix_app.quality import (
     best_existing_match,
     compare_quality,
 )
-
+from deckflix_app.models.library_policy import LibraryPolicy
+from deckflix_app.services.policy_engine import recommend_import
 
 def build_import_queue(comparison, library_files):
     """
@@ -21,6 +22,7 @@ def build_import_queue(comparison, library_files):
     ]
 
     queue = []
+    policy = LibraryPolicy()
 
     # New media
     for item in comparison["new_media"]:
@@ -44,7 +46,11 @@ def build_import_queue(comparison, library_files):
                 item,
                 existing,
             )
-
+            policy_recommendation = recommend_import(
+                existing,
+                item,
+                policy,
+            )
             queue.append({
                 "media": item,
                 "status": "EXISTS",
@@ -52,7 +58,8 @@ def build_import_queue(comparison, library_files):
                 "reason": decision["reason"],
                 "existing": existing,
                 "comparison": decision,
-            })
+                "policy": policy_recommendation,
+           })
 
         else:
             queue.append({

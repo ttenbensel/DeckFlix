@@ -29,6 +29,43 @@ def show_quality_comparison(item):
     print()
     print(f"    Difference: {comparison['difference']}")
 
+def show_policy_recommendation(item):
+    """
+    Display the policy recommendation for an existing media item.
+    """
+
+    recommendation = item.get("policy")
+
+    if recommendation is None:
+        return
+
+    labels = {
+        "KEEP_EXISTING": "Keep Current Copy",
+        "UPGRADE": "Upgrade Library Copy",
+        "REPLACE_EFFICIENTLY": "Replace with Efficient Version",
+        "REVIEW": "Review Manually",
+    }
+
+    print()
+    print("    Policy Recommendation:")
+    print(
+        "      Action  : "
+        f"{labels.get(recommendation.action, recommendation.action)}"
+    )
+    print(f"      Confidence: {recommendation.confidence}%")
+
+    print("      Why:")
+
+    for reason in recommendation.reasons:
+        print(f"        • {reason}")
+
+    if recommendation.storage_change_bytes:
+        sign = "+" if recommendation.storage_change_bytes > 0 else ""
+
+        print(
+            "      Storage : "
+            f"{sign}{recommendation.storage_change_gb:.2f} GB"
+        )
 
 def show_queue(queue):
     summary = queue_summary(queue)
@@ -61,6 +98,7 @@ def show_queue(queue):
         print(f"    Reason : {item['reason']}")
 
         show_quality_comparison(item)
+        show_policy_recommendation(item)
 
         print()
 

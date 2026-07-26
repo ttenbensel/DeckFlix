@@ -4,7 +4,7 @@ from deckflix_app.library_manager import (
 )
 from deckflix_app.scanner import count_videos
 from deckflix_app.shuttle import scan_shuttle
-
+from deckflix_app.models.library_policy import LibraryPolicy
 
 def health_status(score):
     if score >= 90:
@@ -24,6 +24,7 @@ def show_dashboard(movies_path, tv_path, shuttle_path):
 
     score = calculate_health_score(summary)
     shuttle = scan_shuttle(shuttle_path)
+    policy = LibraryPolicy()
 
     print()
     print("Bridge Dashboard")
@@ -43,6 +44,16 @@ def show_dashboard(movies_path, tv_path, shuttle_path):
     print(f"Missing Years      {len(summary['missing_year_movies'])}")
     print()
 
+    print("Library Policy")
+    print("──────────────")
+    print(f"Profile            {policy.profile}")
+    print(f"Target Resolution  {policy.preferred_resolution}")
+    print(f"Preferred Codec    {policy.preferred_codec}")
+    print(
+        f"Maximum Movie      "
+        f"{policy.maximum_movie_size_gb:.1f} GB"
+    )
+    print()
     print("Shuttle")
     print("───────")
     if shuttle["connected"]:
