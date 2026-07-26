@@ -325,7 +325,7 @@ def main():
             release_inspector()
 
         elif choice == "7":
-            show_repair_queue()
+            session_repair_queue_screen()
 
         elif choice == "8":
             ship_mode()
@@ -346,6 +346,46 @@ def duplicate_inspector():
     )
 
     input("\nPress Enter to return to the main menu...")
+
+def session_repair_queue_screen():
+    """
+    Display CleanupPlan objects stored in the session repair queue.
+
+    Read-only. Nothing is moved, quarantined, or deleted.
+    """
+
+    plans = SESSION_REPAIR_QUEUE.plans()
+
+    print()
+    print("Repair Queue")
+    print("════════════")
+
+    if not plans:
+        print()
+        print("Repair queue is empty.")
+        return
+
+    print()
+    print(f"Queued releases     {SESSION_REPAIR_QUEUE.count}")
+    print(
+        f"Recoverable space   "
+        f"{SESSION_REPAIR_QUEUE.recoverable_bytes / 1024**3:.2f} GB"
+    )
+
+    for number, plan in enumerate(plans, start=1):
+        title, year, _ = plan.release_key
+
+        print()
+        print(f"{number}. {title.title()} ({year or 'unknown'})")
+        print(f"   Risk             {plan.risk}")
+        print(f"   Quarantine       {len(plan.quarantine)} file(s)")
+        print(f"   Recoverable      {plan.recovered_gb:.2f} GB")
+
+        for item in plan.quarantine:
+            print(f"   [PROPOSED]       {item.path}")
+
+    print()
+    print("Read-only queue. Nothing has been changed.")
 
 def release_actions(index, release):
     """
