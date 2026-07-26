@@ -24,12 +24,14 @@ from deckflix_app.services.cleanup_planner import (
     build_cleanup_plan,
     show_cleanup_plan,
 )
+from deckflix_app.services.repair_queue import RepairQueue
+
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
 SHUTTLE = Path("/mnt/source2tb")
 
 SESSION_MEDIA_INDEX = None
-
+SESSION_REPAIR_QUEUE = RepairQueue()
 
 def get_session_media_index(refresh=False):
     """
@@ -407,8 +409,32 @@ def release_actions(index, release):
             show_cleanup_plan(plan)
 
             input("\nPress Enter...")
+
         elif choice == "4":
-            print("\nRepair Queue integration coming soon.")
+            print()
+            print("Checking fingerprints...")
+
+            index.confirm_release_fingerprints([release])
+
+            plan = build_cleanup_plan(release)
+
+            if not plan.quarantine:
+                print()
+                print("No SHA-256-confirmed cleanup action available.")
+                input("\nPress Enter...")
+                continue
+
+            SESSION_REPAIR_QUEUE.add(plan)
+
+            print()
+            print("Added to Repair Queue")
+            print("─────────────────────")
+            print(f"Risk              {plan.risk}")
+            print(f"Files proposed    {len(plan.quarantine)}")
+            print(f"Recoverable       {plan.recovered_gb:.2f} GB")
+            print()
+            print("Nothing has been moved.")
+
             input("\nPress Enter...")
 
 def release_inspector():
