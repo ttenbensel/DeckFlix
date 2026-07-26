@@ -94,3 +94,105 @@ def show_execution_preview(preview):
 
     print()
     print("Dry run only. Nothing has been moved.")
+@dataclass(slots=True)
+class RepairExecutionResult:
+    """
+    Result of executing an approved repair preview.
+    """
+
+    moved: list[tuple[Path, Path]] = field(default_factory=list)
+    failed: list[tuple[Path, Path, str]] = field(default_factory=list)
+
+    @property
+    def moved_count(self):
+        return len(self.moved)
+
+    @property
+    def failed_count(self):
+        return len(self.failed)
+
+    @property
+    def success(self):
+        return self.failed_count == 0
+
+
+def execute_preview(preview):
+    """
+    Execute an already-reviewed RepairExecutionPreview.
+
+    Files are moved to quarantine only.
+    Existing destinations are never overwritten.
+    Nothing is deleted.
+    """
+
+    result = RepairExecutionResult()
+
+    for source, destination in preview.moves:
+        if not source.exists():
+            result.failed.append(
+                (source, destination, "Source file no longer exists")
+            )
+            continue
+
+        if destination.exists():
+            result.failed.append(
+                (source, destination, "Destination already exists")
+            )
+            continue
+
+        try:
+            destination.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            source.rename(destination)
+
+            result.moved.append(
+                (source, destination)
+            )
+
+        except OSError as error:
+            result.failed.append(
+                (source, destination, str(error))
+            )
+
+    return result
+
+
+def show_execution_result(result):
+    """
+    Display the result of a repair execution.
+    """
+
+    print()
+    print("Repair Execution Result")
+    print("═══════════════════════")
+
+    print()
+    print(f"Files moved          {result.moved_count}")
+    print(f"Files failed         {result.failed_count}")
+
+    if result.moved:
+        print()
+        print("MOVED TO QUARANTINE")
+        print("───────────────────")
+
+        for source, destination in result.moved:
+            print()
+            print(f"FROM  {source}")
+            print(f"TO    {destination}")
+
+    if result.failed:
+        print()
+        print("FAILED")
+        print("──────")
+
+        for source, destination, reason in result.failed:
+            print()
+            print(f"FROM  {source}")
+            print(f"TO    {destination}")
+            print(f"WHY   {reason}")
+
+    print()
+    print("Nothing has been deleted.")
