@@ -1,9 +1,9 @@
 from datetime import datetime
-from pathlib import Path
+
+from deckflix_app.config.config import get_quarantine_path
 
 
-LOG_FILE = Path("/mnt/dest4tb/deckflix-repair.log")
-
+LOG_FILE = get_quarantine_path().parent / "deckflix-repair.log"
 
 def write_log(action, source, destination, status):
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)

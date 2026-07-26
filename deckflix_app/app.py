@@ -33,11 +33,21 @@ from deckflix_app.services.repair_executor import (
     execute_preview,
     show_execution_result,
 )
+from deckflix_app.config.config import (
+    get_movie_paths,
+    get_tv_paths,
+    get_shuttle_path,
+    get_quarantine_path,
+)
 
-MOVIES = Path("/mnt/library1/movie")
-TV = Path("/mnt/library1/tv")
-SHUTTLE = Path("/mnt/source2tb")
-QUARANTINE_ROOT = Path("/mnt/library1/deckflix-quarantine")
+MOVIE_PATHS = get_movie_paths()
+TV_PATHS = get_tv_paths()
+
+MOVIES = MOVIE_PATHS[0]
+TV = TV_PATHS[0]
+
+SHUTTLE = get_shuttle_path()
+QUARANTINE_ROOT = get_quarantine_path()
 ENABLE_REAL_REPAIRS = False
 SESSION_MEDIA_INDEX = None
 SESSION_REPAIR_QUEUE = RepairQueue()
@@ -274,7 +284,7 @@ def repair_preview():
             print("Quarantine")
             print("──────────")
             print("Future repair actions will move files here first:")
-            print("/mnt/dest4tb/deckflix-quarantine")
+            print(QUARANTINE_ROOT)
             print()
             print("DeckFlix rule:")
             print("Never delete first. Quarantine, verify, then remove later.")
