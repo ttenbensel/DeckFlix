@@ -29,12 +29,16 @@ from deckflix_app.services.repair_queue import RepairQueue
 from deckflix_app.services.repair_executor import (
     build_execution_preview,
     show_execution_preview,
+    confirm_execution,
+    execute_preview,
+    show_execution_result,
 )
 
 MOVIES = Path("/mnt/dest4tb/movie")
 TV = Path("/mnt/dest4tb/tv")
 SHUTTLE = Path("/mnt/source2tb")
-
+QUARANTINE_ROOT = Path("/mnt/library1/deckflix-quarantine")
+ENABLE_REAL_REPAIRS = False
 SESSION_MEDIA_INDEX = None
 SESSION_REPAIR_QUEUE = RepairQueue()
 
@@ -393,6 +397,7 @@ def session_repair_queue_screen():
     print("Read-only queue. Nothing has been changed.")
     print()
     print("D. Dry-run queued repairs")
+    print("E. Execute approved repairs")
     print("0. Back")
     print()
 
@@ -401,9 +406,36 @@ def session_repair_queue_screen():
     if choice == "d":
         preview = build_execution_preview(
             plans,
-            "/mnt/library1/deckflix-quarantine",
+            QUARANTINE_ROOT,
         )
+
         show_execution_preview(preview)
+        input("\nPress Enter...")
+
+    elif choice == "e":
+        preview = build_execution_preview(
+            plans,
+            QUARANTINE_ROOT,
+        )
+
+        show_execution_preview(preview)
+
+        if not ENABLE_REAL_REPAIRS:
+            print()
+            print("Real repair execution is disabled.")
+            print("DeckFlix is running in Safe Preview Mode.")
+            input("\nPress Enter...")
+            return
+
+        if not confirm_execution(preview):
+            print()
+            print("Execution cancelled.")
+            input("\nPress Enter...")
+            return
+
+        result = execute_preview(preview)
+        show_execution_result(result)
+
         input("\nPress Enter...")
 
 def release_actions(index, release):

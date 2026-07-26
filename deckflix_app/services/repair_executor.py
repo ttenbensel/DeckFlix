@@ -196,3 +196,31 @@ def show_execution_result(result):
 
     print()
     print("Nothing has been deleted.")
+def confirm_execution(preview):
+    """
+    Ask the user to explicitly approve execution.
+
+    Returns True only when the user types EXECUTE.
+    """
+
+    print()
+    print("Execute Approved Repairs")
+    print("════════════════════════")
+
+    print()
+    print(f"Files to move      {preview.move_count}")
+    print(f"Files skipped      {preview.skipped_count}")
+
+    print()
+    print("Safety")
+    print("──────")
+    print("• Files will be MOVED to quarantine")
+    print("• Existing quarantine files are never overwritten")
+    print("• Nothing will be deleted")
+
+    print()
+    confirm = input(
+        "Type EXECUTE to continue: "
+    ).strip()
+
+    return confirm == "EXECUTE"
