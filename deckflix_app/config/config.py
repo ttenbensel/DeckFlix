@@ -46,3 +46,9 @@ def get_shuttle_path():
 
 def get_quarantine_path():
     return Path(_config["repair"]["quarantine"])
+
+def get_operational_profile_name():
+    return _config["application"].get(
+        "operational_profile",
+        "shipboard",
+    )

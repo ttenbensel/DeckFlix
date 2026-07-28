@@ -23,6 +23,7 @@
     },
 
     "application": {
-        "log_level": "INFO"
-    }
+         "log_level": "INFO",
+         "operational_profile": "shipboard"
+}
 }
