@@ -1,0 +1,11 @@
+{
+  "shuttle": "/data/shuttle",
+  "movie_libraries": [
+    "/data/library1/movie"
+  ],
+  "tv_libraries": [
+    "/data/library2/tv"
+  ],
+  "report_directory": "/data/library1/deckflix-logs",
+  "read_only": true
+}

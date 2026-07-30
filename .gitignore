@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+
+# Build output
+build/
+dist/
+
+# Runtime data
+logs/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+
+# Generated scans and reports
+shuttle-scan-*.json
+shuttle-scan-*.txt
+library-scan-*.json
+library-scan-*.txt
+comparison-*.json
+comparison-*.txt
+shuttle-inventory-*.json
+
+# Local configuration and secrets
+.env
+.env.*
+config/local.json
+config/secrets.json
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+config/local.json
