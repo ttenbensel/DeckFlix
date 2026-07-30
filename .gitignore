@@ -10,3 +10,9 @@ __pycache__/
 
 # JetBrains
 .idea/
+
+# Local configuration
+config/local.json
+
+# Python packaging
+*.egg-info/
