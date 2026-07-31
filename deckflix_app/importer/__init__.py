@@ -6,6 +6,7 @@ from .models import ImportJob
 from .mover import atomic_move
 from .queue import ImportQueue
 from .results import ImportFailure, ImportResult
+from .safety import ShuttleSafetyChecker, ShuttleSafetyResult
 
 __all__ = [
     "sha256",
@@ -18,4 +19,6 @@ __all__ = [
     "ImportQueue",
     "ImportFailure",
     "ImportResult",
+    "ShuttleSafetyChecker",
+    "ShuttleSafetyResult",
 ]
