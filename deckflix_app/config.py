@@ -35,6 +35,14 @@ class NetworkPolicy:
 
 
 @dataclass(frozen=True)
+class DeckFlixPaths:
+    """Runtime paths used by DeckFlix services."""
+
+    quarantine: Path
+    repair_log: Path
+
+
+@dataclass(frozen=True)
 class DeckFlixConfig:
     """Validated DeckFlix runtime configuration."""
 
@@ -42,6 +50,7 @@ class DeckFlixConfig:
     movie_libraries: tuple[Path, ...]
     tv_libraries: tuple[Path, ...]
     report_directory: Path
+    paths: DeckFlixPaths
     read_only: bool
     operating_profile: str
     low_impact: bool
@@ -205,6 +214,14 @@ def load_config(
         report_directory=Path(
             _require_string(raw_data, "report_directory")
         ).expanduser(),
+        paths=DeckFlixPaths(
+            quarantine=Path(
+                _require_string(raw_data, "quarantine_directory")
+            ).expanduser(),
+            repair_log=Path(
+                _require_string(raw_data, "repair_log")
+            ).expanduser(),
+        ),
         read_only=bool(raw_data.get("read_only", True)),
         operating_profile=operating_profile,
         low_impact=bool(raw_data.get("low_impact", False)),
@@ -250,10 +267,21 @@ def validate_config_paths(config: DeckFlixConfig) -> None:
             f"{formatted}"
         )
 
-    report_parent = config.report_directory.parent
+    writable_path_parents = (
+        ("report_directory", config.report_directory.parent),
+        ("quarantine_directory", config.paths.quarantine.parent),
+        ("repair_log", config.paths.repair_log.parent),
+    )
 
-    if not report_parent.exists():
-        raise ConfigurationError(
-            "The parent of the configured report directory does not exist: "
-            f"{report_parent}"
-        )
+    for name, parent in writable_path_parents:
+        if not parent.exists():
+            raise ConfigurationError(
+                f"The parent of configured path '{name}' does not exist: "
+                f"{parent}"
+            )
+
+        if not parent.is_dir():
+            raise ConfigurationError(
+                f"The parent of configured path '{name}' is not a directory: "
+                f"{parent}"
+            )

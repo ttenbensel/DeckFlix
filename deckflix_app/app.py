@@ -1,5 +1,4 @@
-from pathlib import Path
-
+from deckflix_app.config import load_config
 from deckflix_app.dashboard import show_dashboard
 from deckflix_app.health import library_report, quality_score, size_gb
 from deckflix_app.import_queue import build_import_queue
@@ -13,9 +12,12 @@ from deckflix_app.duplicate_inspector import show_duplicate_inspector
 from deckflix_app.repair_queue_screen import show_repair_queue
 
 
-MOVIES = Path("/mnt/dest4tb/movie")
-TV = Path("/mnt/dest4tb/tv")
-SHUTTLE = Path("/mnt/source2tb")
+CONFIG = load_config()
+
+MOVIES = CONFIG.movie_libraries[0]
+TV = CONFIG.tv_libraries[0]
+SHUTTLE = CONFIG.shuttle
+QUARANTINE = CONFIG.paths.quarantine
 
 
 def logo():
@@ -224,7 +226,7 @@ def repair_preview():
             print("Quarantine")
             print("──────────")
             print("Future repair actions will move files here first:")
-            print("/mnt/dest4tb/deckflix-quarantine")
+            print(QUARANTINE)
             print()
             print("DeckFlix rule:")
             print("Never delete first. Quarantine, verify, then remove later.")

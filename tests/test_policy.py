@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from deckflix_app.config import DeckFlixConfig, NetworkPolicy
+from deckflix_app.config import (
+    DeckFlixConfig,
+    DeckFlixPaths,
+    NetworkPolicy,
+)
 from deckflix_app.policy import (
     Operation,
     PolicyDeniedError,
@@ -26,6 +30,10 @@ def make_config(
         movie_libraries=(Path("/data/library1/movie"),),
         tv_libraries=(Path("/data/library2/tv"),),
         report_directory=Path("/data/library1/deckflix-logs"),
+        paths=DeckFlixPaths(
+            quarantine=Path("/data/library1/deckflix-quarantine"),
+            repair_log=Path("/data/library1/deckflix-logs/repair.log"),
+        ),
         read_only=read_only,
         operating_profile=profile,
         low_impact=low_impact,

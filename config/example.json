@@ -16,5 +16,7 @@
     "max_concurrent_downloads": 1,
     "allow_metadata_downloads": false,
     "allow_jellyfin_refresh": true
-  }
+  },
+  "quarantine_directory": "/data/library1/deckflix-quarantine",
+  "repair_log": "/data/library1/deckflix-logs/repair.log"
 }
