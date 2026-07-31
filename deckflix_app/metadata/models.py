@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(slots=True)
@@ -16,3 +17,6 @@ class MediaMetadata:
     video_codec: str | None = None
 
     container: str | None = None
+
+    path: Path | None = None
+    size: int = 0
