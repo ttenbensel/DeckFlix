@@ -159,3 +159,20 @@ def test_manager_clear_resets_all_state(tmp_path: Path):
     assert manager.state is None
     assert manager.decisions is None
     assert manager.approval_plan is None
+
+
+def test_manager_can_pause_active_import(
+    tmp_path: Path,
+):
+    shuttle = make_shuttle(tmp_path)
+    manager = OperationManager()
+
+    manager.begin(shuttle)
+    manager.attach_decisions(object())
+    manager.attach_approval_plan(object())
+    manager.approve()
+    manager.begin_import()
+
+    manager.pause_import()
+
+    assert manager.state is OperationState.APPROVED

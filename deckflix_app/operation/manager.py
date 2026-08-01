@@ -163,6 +163,20 @@ class OperationManager:
             state=OperationState.IMPORTING,
         )
 
+    def pause_import(self) -> None:
+        operation = self.require_operation()
+
+        if operation.state is not OperationState.IMPORTING:
+            raise InvalidOperationTransition(
+                f"Cannot pause import while state is "
+                f"{operation.state.value}"
+            )
+
+        self.operation = replace(
+            operation,
+            state=OperationState.APPROVED,
+        )
+
     def complete(
         self,
         *,

@@ -21,6 +21,7 @@ from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 from deckflix_app.screens import (
+    TerminalImportMonitor,
     show_managed_approval_plan,
     show_managed_decision_queue,
     show_operation_dashboard,
@@ -274,6 +275,10 @@ def execute_current_operation():
         print("Import cancelled.")
         return
 
+    monitor = TerminalImportMonitor(
+        operation_id=OPERATION_MANAGER.operation.id
+    )
+
     try:
         certificate = execute_operation(
             OPERATION_MANAGER,
@@ -281,13 +286,65 @@ def execute_current_operation():
             tv_library=TV,
             temp_dir=Path("/tmp/deckflix-import"),
             read_only=CONFIG.read_only,
+            progress=monitor,
+            history_directory=(
+                CONFIG.report_directory
+                / "operations"
+            ),
+            journal_path=(
+                CONFIG.report_directory
+                / "current-import-journal.json"
+            ),
         )
+
+    except KeyboardInterrupt:
+        print()
+        print()
+        print("IMPORT PAUSED")
+        print("─────────────")
+        print(
+            "The current file will be reconciled "
+            "when the import resumes."
+        )
+
+        try:
+            OPERATION_MANAGER.pause_import()
+        except InvalidOperationTransition:
+            pass
+
+        save_operation_manager(
+            OPERATION_MANAGER,
+            OPERATION_STATE_PATH,
+        )
+
+        print("Operation state and journal saved.")
+        print("No completed library files will be recopied.")
+        return
+
     except Exception as exc:
         print()
         print(f"Import failed: {exc}")
+
+        if (
+            OPERATION_MANAGER.state is not None
+            and OPERATION_MANAGER.state.value == "IMPORTING"
+        ):
+            try:
+                OPERATION_MANAGER.pause_import()
+            except InvalidOperationTransition:
+                pass
+
+        save_operation_manager(
+            OPERATION_MANAGER,
+            OPERATION_STATE_PATH,
+        )
         return
 
     if certificate is not None:
+        save_operation_manager(
+            OPERATION_MANAGER,
+            OPERATION_STATE_PATH,
+        )
         print_certificate(certificate)
 
 def build_current_queue():
