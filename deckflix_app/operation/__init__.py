@@ -1,3 +1,4 @@
+from .workflow import prepare_operation
 from .manager import (
     InvalidOperationTransition,
     OperationInvalidated,
@@ -17,6 +18,7 @@ from .snapshot import (
 )
 
 __all__ = [
+    "prepare_operation",
     "InvalidOperationTransition",
     "OperationInvalidated",
     "OperationManager",
