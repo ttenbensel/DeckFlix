@@ -1,3 +1,10 @@
+from .persistence import (
+    delete_saved_operation,
+    load_operation_manager,
+    manager_from_dict,
+    manager_to_dict,
+    save_operation_manager,
+)
 from .history import (
     OperationHistoryRecord,
     list_history_records,
@@ -31,6 +38,11 @@ from .snapshot import (
 )
 
 __all__ = [
+    "delete_saved_operation",
+    "load_operation_manager",
+    "manager_from_dict",
+    "manager_to_dict",
+    "save_operation_manager",
     "OperationHistoryRecord",
     "list_history_records",
     "load_history_record",

@@ -5,8 +5,11 @@ from deckflix_app.operation import (
     InvalidOperationTransition,
     OperationManager,
     approve_ready_items,
+    delete_saved_operation,
     execute_operation,
+    load_operation_manager,
     prepare_operation,
+    save_operation_manager,
 )
 from deckflix_app.dashboard import show_dashboard
 from deckflix_app.health import library_report, quality_score, size_gb
@@ -32,7 +35,18 @@ from deckflix_app.repair_queue_screen import show_repair_queue
 
 
 CONFIG = load_config()
-OPERATION_MANAGER = OperationManager()
+
+OPERATION_STATE_PATH = (
+    CONFIG.report_directory
+    / "current-operation.json"
+)
+
+try:
+    OPERATION_MANAGER = load_operation_manager(
+        OPERATION_STATE_PATH
+    )
+except Exception:
+    OPERATION_MANAGER = OperationManager()
 
 MOVIES = CONFIG.movie_libraries[0]
 TV = CONFIG.tv_libraries[0]
@@ -103,6 +117,11 @@ def begin_operation():
         f"Decisions          "
         f"{OPERATION_MANAGER.decisions.total}"
     )
+    save_operation_manager(
+        OPERATION_MANAGER,
+        OPERATION_STATE_PATH,
+    )
+
     print()
     print("Nothing has been imported or changed.")
 
@@ -137,6 +156,7 @@ def clear_operation():
         return
 
     OPERATION_MANAGER.clear()
+    delete_saved_operation(OPERATION_STATE_PATH)
     print("Operation cleared.")
 
 
@@ -182,6 +202,11 @@ def approve_operation():
         print()
         print(f"Approval failed: {exc}")
         return
+
+    save_operation_manager(
+        OPERATION_MANAGER,
+        OPERATION_STATE_PATH,
+    )
 
     print()
     print(f"Approved {approved} import(s).")
