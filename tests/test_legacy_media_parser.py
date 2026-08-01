@@ -90,3 +90,44 @@ def test_scanner_ignores_sample_directories(tmp_path: Path):
 
     assert real in files
     assert sample not in files
+
+
+def test_two_by_episode_format_removes_episode_title(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "Black Mirror"
+        / "Black mirror 2"
+        / "Black.Mirror.2x01.Be.Right.Back.720p.HDTV.x264-FoV.mkv"
+    )
+
+    file.parent.mkdir(parents=True)
+    file.touch()
+
+    media = inspect_media(file)
+
+    assert media.title == "Black Mirror"
+    assert media.season == 2
+    assert media.episode == 1
+
+
+def test_numeric_episode_filename_uses_release_folder_title(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "American Horror Story"
+        / "American Horror Story - The Complete Season 4"
+        / "American Horror Story S04E01 HDTV x264-LOL"
+        / "american.horror.story.401.hdtv-lol.mp4"
+    )
+
+    file.parent.mkdir(parents=True)
+    file.touch()
+
+    media = inspect_media(file)
+
+    assert media.title == "American Horror Story"
+    assert media.season == 4
+    assert media.episode == 1

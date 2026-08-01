@@ -181,10 +181,21 @@ def score_quality(path):
     return score
 
 
+def _contains_episode_marker(text):
+    return bool(
+        re.search(
+            r"(?:[Ss]\d{1,2}[Ee]\d{1,3}|\b\d{1,2}x\d{1,3}\b)",
+            str(text),
+            re.IGNORECASE,
+        )
+    )
+
+
 def _clean_tv_title_candidate(text):
     """
-    Clean a possible TV show title while preserving numeric show names
-    such as 1883 and 1923.
+    Extract the show title before an SxxExx or 2x01 episode marker.
+
+    Numeric titles such as 1883 and 1923 are preserved.
     """
     original = str(text).strip()
 
@@ -192,35 +203,32 @@ def _clean_tv_title_candidate(text):
         return original
 
     title = re.split(
-        r"[Ss]\d{1,2}[Ee]\d{1,3}",
+        r"(?:[Ss]\d{1,2}[Ee]\d{1,3}|\b\d{1,2}x\d{1,3}\b)",
         original,
         maxsplit=1,
         flags=re.IGNORECASE,
     )[0]
 
     title = re.sub(
-        r"\bseason[ ._-]*\d{1,2}\b.*$",
+        r"\b(?:complete[ ._-]*)?season[ ._-]*\d{1,2}\b.*$",
         " ",
         title,
         flags=re.IGNORECASE,
     )
 
-    title = clean_title(title)
-
-    return title.strip()
+    return clean_title(title).strip()
 
 
 def _tv_title_from_path(path):
     """
-    Determine a TV show title from filename and folder structure.
+    Determine the show title from the nearest filename or directory
+    containing an explicit episode marker.
 
-    Preference:
-    1. Text before SxxExx in the filename
-    2. Nearest meaningful parent folder
-    3. Higher parent folders
+    This handles:
+    - Show.Name.S01E02.mkv
+    - Show.Name.2x02.mkv
+    - files named 401 where the parent folder contains Show S04E01
     """
-    filename_title = _clean_tv_title_candidate(path.stem)
-
     generic_names = {
         "",
         "sample",
@@ -232,18 +240,26 @@ def _tv_title_from_path(path):
         "shuttle",
     }
 
-    if filename_title.lower() not in generic_names:
-        return filename_title
+    candidates = [path.stem]
+    candidates.extend(parent.name for parent in path.parents)
+
+    for raw_candidate in candidates:
+        if not _contains_episode_marker(raw_candidate):
+            continue
+
+        candidate = _clean_tv_title_candidate(raw_candidate)
+
+        if candidate.lower() not in generic_names:
+            return candidate
 
     for parent in path.parents:
         candidate = _clean_tv_title_candidate(parent.name)
-        lower = candidate.lower()
 
-        if lower in generic_names:
+        if candidate.lower() in generic_names:
             continue
 
         if re.fullmatch(
-            r"season[ ._-]*\d{1,2}",
+            r"(?:complete[ ._-]*)?season[ ._-]*\d{1,2}",
             parent.name,
             re.IGNORECASE,
         ):
@@ -251,8 +267,7 @@ def _tv_title_from_path(path):
 
         return candidate
 
-    return filename_title
-
+    return _clean_tv_title_candidate(path.stem)
 
 def inspect_media(path):
     path = Path(path)
