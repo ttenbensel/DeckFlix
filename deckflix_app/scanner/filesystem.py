@@ -22,6 +22,12 @@ def scan_directory(root: str | Path) -> list[Path]:
         for path in root.rglob("*")
         if path.is_file()
         and path.suffix.lower() in VIDEO_EXTENSIONS
+        and "sample" not in {
+            part.lower()
+            for part in path.parts
+        }
+        and "-sample" not in path.stem.lower()
+        and ".sample" not in path.stem.lower()
     ]
 
     return sorted(files)

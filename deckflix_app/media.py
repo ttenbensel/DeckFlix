@@ -181,6 +181,79 @@ def score_quality(path):
     return score
 
 
+def _clean_tv_title_candidate(text):
+    """
+    Clean a possible TV show title while preserving numeric show names
+    such as 1883 and 1923.
+    """
+    original = str(text).strip()
+
+    if re.fullmatch(r"(19|20)\d{2}", original):
+        return original
+
+    title = re.split(
+        r"[Ss]\d{1,2}[Ee]\d{1,3}",
+        original,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0]
+
+    title = re.sub(
+        r"\bseason[ ._-]*\d{1,2}\b.*$",
+        " ",
+        title,
+        flags=re.IGNORECASE,
+    )
+
+    title = clean_title(title)
+
+    return title.strip()
+
+
+def _tv_title_from_path(path):
+    """
+    Determine a TV show title from filename and folder structure.
+
+    Preference:
+    1. Text before SxxExx in the filename
+    2. Nearest meaningful parent folder
+    3. Higher parent folders
+    """
+    filename_title = _clean_tv_title_candidate(path.stem)
+
+    generic_names = {
+        "",
+        "sample",
+        "samples",
+        "season",
+        "tv",
+        "television",
+        "media",
+        "shuttle",
+    }
+
+    if filename_title.lower() not in generic_names:
+        return filename_title
+
+    for parent in path.parents:
+        candidate = _clean_tv_title_candidate(parent.name)
+        lower = candidate.lower()
+
+        if lower in generic_names:
+            continue
+
+        if re.fullmatch(
+            r"season[ ._-]*\d{1,2}",
+            parent.name,
+            re.IGNORECASE,
+        ):
+            continue
+
+        return candidate
+
+    return filename_title
+
+
 def inspect_media(path):
     path = Path(path)
     text = str(path)
@@ -193,15 +266,17 @@ def inspect_media(path):
 
     if season is not None and episode is not None:
         media_type = "tv"
-        title_source = path.parent.parent.name if path.parent.parent else path.parent.name
+        title = _tv_title_from_path(path)
+        year = None
     else:
         media_type = "movie"
         title_source = path.parent.name
+        title = clean_title(title_source)
 
     return MediaInfo(
         path=path,
         media_type=media_type,
-        title=clean_title(title_source),
+        title=title,
         year=year,
         season=season,
         episode=episode,
