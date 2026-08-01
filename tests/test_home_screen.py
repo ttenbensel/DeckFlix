@@ -1,14 +1,25 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+from deckflix_app.decision import ApprovalStatus
 from deckflix_app.home_screen import (
     mode_name,
     path_status,
+    recommended_action,
     show_home_screen,
+)
+from deckflix_app.operation import (
+    OperationManager,
+    approve_ready_items,
+    prepare_operation,
 )
 
 
-def make_config(tmp_path: Path, *, read_only: bool = True):
+def make_config(
+    tmp_path: Path,
+    *,
+    read_only: bool = True,
+):
     shuttle = tmp_path / "shuttle"
     movies = tmp_path / "movies"
     tv = tmp_path / "tv"
@@ -27,6 +38,37 @@ def make_config(tmp_path: Path, *, read_only: bool = True):
     )
 
 
+def make_operation(
+    tmp_path: Path,
+    *,
+    read_only: bool = True,
+):
+    config = make_config(
+        tmp_path,
+        read_only=read_only,
+    )
+
+    source = (
+        config.shuttle
+        / "Alien (1979)"
+        / "Alien.1979.1080p.BluRay.HEVC.mkv"
+    )
+    source.parent.mkdir()
+    source.write_bytes(b"media")
+
+    manager = OperationManager()
+
+    prepare_operation(
+        manager,
+        shuttle_path=config.shuttle,
+        movie_libraries=config.movie_libraries,
+        tv_libraries=config.tv_libraries,
+        operation_id="DF-HOME-001",
+    )
+
+    return config, manager
+
+
 def test_path_status(tmp_path: Path):
     path = tmp_path / "library"
 
@@ -42,6 +84,59 @@ def test_mode_name():
     assert mode_name(False) == "IMPORT MODE"
 
 
+def test_no_operation_recommends_begin():
+    manager = OperationManager()
+
+    assert recommended_action(
+        manager,
+        read_only=True,
+    ) == "Begin Shuttle Operation"
+
+
+def test_snapshot_ready_recommends_approval(
+    tmp_path: Path,
+):
+    _, manager = make_operation(tmp_path)
+
+    assert manager.approval_plan.count(
+        ApprovalStatus.READY
+    ) == 1
+
+    assert "Review and Approve" in recommended_action(
+        manager,
+        read_only=True,
+    )
+
+
+def test_approved_safe_mode_recommends_disable(
+    tmp_path: Path,
+):
+    _, manager = make_operation(tmp_path)
+
+    approve_ready_items(manager)
+
+    assert recommended_action(
+        manager,
+        read_only=True,
+    ) == "Disable Safe Mode Before Import"
+
+
+def test_approved_import_mode_recommends_execute(
+    tmp_path: Path,
+):
+    _, manager = make_operation(
+        tmp_path,
+        read_only=False,
+    )
+
+    approve_ready_items(manager)
+
+    assert recommended_action(
+        manager,
+        read_only=False,
+    ) == "Execute Approved Import"
+
+
 def test_home_screen_shows_system_state(
     tmp_path: Path,
     capsys,
@@ -50,9 +145,10 @@ def test_home_screen_shows_system_state(
 
     show_home_screen(
         app_name="DeckFlix",
-        version="0.6.0",
-        codename="Trust",
+        version="0.8.0",
+        codename="Safe Repair Preview",
         config=config,
+        operation_manager=OperationManager(),
     )
 
     output = capsys.readouterr().out
@@ -63,5 +159,29 @@ def test_home_screen_shows_system_state(
     assert "SAFE MODE" in output
     assert "ship_limited" in output
     assert "Enabled" in output
-    assert "0.6.0" in output
-    assert "Trust" in output
+    assert "No active operation" in output
+    assert "Begin Shuttle Operation" in output
+
+
+def test_home_screen_shows_active_operation(
+    tmp_path: Path,
+    capsys,
+):
+    config, manager = make_operation(tmp_path)
+
+    show_home_screen(
+        app_name="DeckFlix",
+        version="0.8.0",
+        codename="Safe Repair Preview",
+        config=config,
+        operation_manager=manager,
+    )
+
+    output = capsys.readouterr().out
+
+    assert "DF-HOME-001" in output
+    assert "SNAPSHOT_READY" in output
+    assert "Snapshot    VALID" in output
+    assert "Files       1" in output
+    assert "Ready       1" in output
+    assert "Recommended Next Action" in output

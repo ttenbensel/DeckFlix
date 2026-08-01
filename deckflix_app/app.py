@@ -46,6 +46,7 @@ def logo():
         version=VERSION,
         codename=CODENAME,
         config=CONFIG,
+        operation_manager=OPERATION_MANAGER,
     )
 
 
