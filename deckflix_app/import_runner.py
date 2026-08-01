@@ -1,19 +1,27 @@
+from datetime import datetime
+from pathlib import Path
+
 from deckflix_app.approval import approve_imports
 from deckflix_app.import_confirm import confirm_import
 from deckflix_app.importer import (
-    build_import_plan,
-    copy_one_item,
+    ImportEngine,
+    ShuttleCertificate,
+    ShuttleSafetyChecker,
+    print_certificate,
+    queue_from_legacy_plan,
 )
+from deckflix_app.importer import build_import_plan
 
 
-def run_import(queue, movies_path, tv_path):
-    """
-    Execute an approved import.
+TEMP_IMPORT_DIRECTORY = Path("/tmp/deckflix-import")
 
-    Currently imports ONE file only.
-    This keeps testing safe.
-    """
 
+def run_import(
+    queue,
+    movies_path,
+    tv_path,
+    shuttle_path=Path("/data/shuttle"),
+):
     approved = approve_imports(queue)
 
     plan = build_import_plan(
@@ -22,26 +30,42 @@ def run_import(queue, movies_path, tv_path):
         tv_path,
     )
 
-    if not confirm_import(plan):
-        print()
-        print("Import cancelled.")
-        return False
-
     if not plan:
         print()
         print("Nothing to import.")
         return False
 
-    result = copy_one_item(plan[0])
+    if not confirm_import(plan):
+        print()
+        print("Import cancelled.")
+        return False
 
-    print()
-    print("Import Complete")
-    print("═══════════════")
-    print(f"Copied:")
-    print(result["source"])
-    print()
-    print("Destination:")
-    print(result["target"])
-    print()
+    import_queue = queue_from_legacy_plan(plan)
 
-    return True
+    result = ImportEngine().execute(
+        import_queue,
+        TEMP_IMPORT_DIRECTORY,
+    )
+
+    safety = ShuttleSafetyChecker().check(
+        queue=import_queue,
+        import_result=result,
+        shuttle_path=Path(shuttle_path),
+        temp_dir=TEMP_IMPORT_DIRECTORY,
+    )
+
+    certificate = ShuttleCertificate(
+        shuttle_path=Path(shuttle_path),
+        import_result=result,
+        safety=safety,
+        created_at=datetime.now(),
+    )
+
+    print_certificate(certificate)
+
+    if safety.safe:
+        print()
+        print("Shuttle actions are not enabled yet.")
+        print("No files will be deleted or ejected.")
+
+    return safety.safe

@@ -1,3 +1,4 @@
+from .certificate import ShuttleCertificate, print_certificate
 from .adapter import (
     decision_for_plan_item,
     import_job_from_plan_item,
@@ -14,6 +15,8 @@ from .results import ImportFailure, ImportResult
 from .safety import ShuttleSafetyChecker, ShuttleSafetyResult
 
 __all__ = [
+    "ShuttleCertificate",
+    "print_certificate",
     "decision_for_plan_item",
     "import_job_from_plan_item",
     "queue_from_legacy_plan",
