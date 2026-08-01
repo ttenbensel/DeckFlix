@@ -638,23 +638,20 @@ def main():
 
         print("1. Begin Shuttle Operation")
         print("2. Operation Dashboard")
-        print("3. Decision Queue")
-        print("4. Decision Approval")
-        print("5. Approve Ready Imports")
-        print("6. Full Import Preflight")
-        print("7. Enable Import Mode")
-        print("8. Execute Operation")
-        print("9. System Verification")
-        print("10. Operating Mode")
-        print("11. Operation History")
-        print("12. Receive Shuttle Preview")
-        print("13. Parser Diagnostics")
-        print("14. Library Health")
-        print("15. Duplicate Inspector")
-        print("16. Repair Queue")
-        print("17. Bridge Dashboard")
-        print("18. Clear Current Operation")
-        print("19. Exit")
+        print("3. Review Decisions")
+        print("4. Approve Ready Imports")
+        print("5. Full Import Preflight")
+        print("6. Enable Import Mode")
+        print("7. Execute Operation")
+        print("8. Operation History")
+        print("9. Library Health")
+        print("10. Duplicate Inspector")
+        print("11. Repair Queue")
+        print("12. Parser Diagnostics")
+        print("13. System Verification")
+        print("14. Operating Mode")
+        print("15. Clear Current Operation")
+        print("16. Exit")
         print()
 
         choice = input("Select option: ").strip()
@@ -674,26 +671,41 @@ def main():
             )
 
         elif choice == "4":
-            show_managed_approval_plan(
-                OPERATION_MANAGER
-            )
-
-        elif choice == "5":
             approve_operation()
 
-        elif choice == "6":
+        elif choice == "5":
             full_import_preflight()
 
-        elif choice == "7":
+        elif choice == "6":
             enable_import_mode()
 
-        elif choice == "8":
+        elif choice == "7":
             execute_current_operation()
 
+        elif choice == "8":
+            show_operation_history(
+                CONFIG.report_directory
+                / "operations"
+            )
+
         elif choice == "9":
-            system_verification()
+            library_health()
 
         elif choice == "10":
+            duplicate_inspector()
+
+        elif choice == "11":
+            show_repair_queue()
+
+        elif choice == "12":
+            show_parser_diagnostics(
+                SHUTTLE
+            )
+
+        elif choice == "13":
+            system_verification()
+
+        elif choice == "14":
             changed = show_operating_modes(CONFIG)
 
             if changed:
@@ -703,45 +715,19 @@ def main():
                     "starting or continuing an operation."
                 )
 
-        elif choice == "11":
-            show_operation_history(
-                CONFIG.report_directory
-                / "operations"
-            )
-
-        elif choice == "12":
-            receive_shuttle()
-
-        elif choice == "13":
-            show_parser_diagnostics(SHUTTLE)
-
-        elif choice == "14":
-            library_health()
-
         elif choice == "15":
-            duplicate_inspector()
-
-        elif choice == "16":
-            show_repair_queue()
-
-        elif choice == "17":
-            show_dashboard(
-                MOVIES,
-                TV,
-                SHUTTLE,
-            )
-
-        elif choice == "18":
             clear_operation()
 
-        elif choice == "19":
+        elif choice == "16":
             print("Securing DeckFlix console.")
             break
 
         else:
             print("Invalid option.")
 
-        input("\nPress Enter to return to menu...")
+        input(
+            "\nPress Enter to return to menu..."
+        )
 
 
 def duplicate_inspector():
