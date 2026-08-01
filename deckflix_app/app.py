@@ -120,10 +120,18 @@ def main():
             approve_operation()
 
         elif choice == "5":
-            full_import_preflight()
+            full_import_preflight(
+                operation_manager=OPERATION_MANAGER,
+                movies=MOVIES,
+                tv=TV,
+                config=CONFIG,
+            )
 
         elif choice == "6":
-            enable_import_mode()
+            enable_import_mode(
+                operation_manager=OPERATION_MANAGER,
+                operation_state_path=OPERATION_STATE_PATH,
+            )
 
         elif choice == "7":
             execute_current_operation()

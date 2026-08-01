@@ -167,7 +167,12 @@ def approve_operation():
 
 
 
-def full_import_preflight():
+def full_import_preflight(
+    operation_manager,
+    movies,
+    tv,
+    config,
+):
     print()
     print("Preparing full import preflight...")
 
@@ -198,7 +203,10 @@ def full_import_preflight():
     )
 
 
-def enable_import_mode():
+def enable_import_mode(
+    operation_manager,
+    operation_state_path,
+):
     print()
     print("Enable Import Mode")
     print("══════════════════")
