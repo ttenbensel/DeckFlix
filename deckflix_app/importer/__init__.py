@@ -1,3 +1,7 @@
+from .progress import (
+    ImportProgress,
+    ImportStage,
+)
 from .certificate import ShuttleCertificate, print_certificate
 from .adapter import (
     decision_for_plan_item,
@@ -15,6 +19,8 @@ from .results import ImportFailure, ImportResult
 from .safety import ShuttleSafetyChecker, ShuttleSafetyResult
 
 __all__ = [
+    "ImportProgress",
+    "ImportStage",
     "ShuttleCertificate",
     "print_certificate",
     "decision_for_plan_item",

@@ -133,6 +133,7 @@ def execute_operation(
     tv_library: Path,
     temp_dir: Path,
     read_only: bool,
+    progress=None,
 ) -> ShuttleCertificate | None:
     operation = manager.require_operation()
 
@@ -161,6 +162,7 @@ def execute_operation(
     result = ImportEngine().execute(
         queue,
         Path(temp_dir),
+        progress=progress,
     )
 
     safety = ShuttleSafetyChecker().check(
