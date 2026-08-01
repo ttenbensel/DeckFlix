@@ -1,3 +1,8 @@
+from .preflight import (
+    ImportPreflightResult,
+    PreflightConflict,
+    run_import_preflight,
+)
 from .persistence import (
     delete_saved_operation,
     load_operation_manager,
@@ -38,6 +43,9 @@ from .snapshot import (
 )
 
 __all__ = [
+    "ImportPreflightResult",
+    "PreflightConflict",
+    "run_import_preflight",
     "delete_saved_operation",
     "load_operation_manager",
     "manager_from_dict",

@@ -1,3 +1,12 @@
+from .journal import (
+    ImportJournal,
+    JournalEntry,
+    JournalStatus,
+    delete_import_journal,
+    load_import_journal,
+    save_import_journal,
+)
+from .resumable import ResumableImportExecutor
 from .progress import (
     ImportProgress,
     ImportStage,
@@ -19,6 +28,13 @@ from .results import ImportFailure, ImportResult
 from .safety import ShuttleSafetyChecker, ShuttleSafetyResult
 
 __all__ = [
+    "ImportJournal",
+    "JournalEntry",
+    "JournalStatus",
+    "ResumableImportExecutor",
+    "delete_import_journal",
+    "load_import_journal",
+    "save_import_journal",
     "ImportProgress",
     "ImportStage",
     "ShuttleCertificate",

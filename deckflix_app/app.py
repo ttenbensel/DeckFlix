@@ -8,6 +8,7 @@ from deckflix_app.operation import (
     delete_saved_operation,
     execute_operation,
     load_operation_manager,
+    run_import_preflight,
     prepare_operation,
     save_operation_manager,
 )
@@ -23,6 +24,7 @@ from deckflix_app.screens import (
     show_managed_approval_plan,
     show_managed_decision_queue,
     show_operation_dashboard,
+    show_import_preflight,
     show_operation_history,
     show_parser_diagnostics,
     show_receive_shuttle,
@@ -212,6 +214,37 @@ def approve_operation():
     print(f"Approved {approved} import(s).")
     print("No files have been copied.")
 
+
+
+def full_import_preflight():
+    print()
+    print("Preparing full import preflight...")
+
+    if not OPERATION_MANAGER.active:
+        print()
+        print("No operation is active.")
+        return
+
+    try:
+        result = run_import_preflight(
+            OPERATION_MANAGER,
+            movie_library=MOVIES,
+            tv_library=TV,
+            temp_dir=Path(
+                "/tmp/deckflix-import"
+            ),
+        )
+    except Exception as exc:
+        print()
+        print(
+            f"Preflight could not run: {exc}"
+        )
+        return
+
+    show_import_preflight(
+        result,
+        read_only=CONFIG.read_only,
+    )
 
 def execute_current_operation():
     print()
@@ -452,23 +485,26 @@ def main():
 
         print("1. Begin Shuttle Operation")
         print("2. Operation Dashboard")
-        print("3. Receive Shuttle Preview")
-        print("4. Decision Queue")
-        print("5. Decision Approval")
-        print("6. Approve Ready Imports")
+        print("3. Decision Queue")
+        print("4. Decision Approval")
+        print("5. Approve Ready Imports")
+        print("6. Full Import Preflight")
         print("7. Execute Operation")
         print("8. Operation History")
-        print("9. Parser Diagnostics")
-        print("10. Library Health")
-        print("11. Duplicate Inspector")
-        print("12. Repair Queue")
-        print("13. Ship Mode")
-        print("14. Bridge Dashboard")
-        print("15. Clear Current Operation")
-        print("16. Exit")
+        print("9. Receive Shuttle Preview")
+        print("10. Parser Diagnostics")
+        print("11. Library Health")
+        print("12. Duplicate Inspector")
+        print("13. Repair Queue")
+        print("14. Ship Mode")
+        print("15. Bridge Dashboard")
+        print("16. Clear Current Operation")
+        print("17. Exit")
         print()
 
-        choice = input("Select option: ").strip()
+        choice = input(
+            "Select option: "
+        ).strip()
 
         if not choice:
             continue
@@ -480,54 +516,72 @@ def main():
             operation_dashboard()
 
         elif choice == "3":
-            receive_shuttle()
+            show_managed_decision_queue(
+                OPERATION_MANAGER
+            )
 
         elif choice == "4":
-            show_managed_decision_queue(OPERATION_MANAGER)
+            show_managed_approval_plan(
+                OPERATION_MANAGER
+            )
 
         elif choice == "5":
-            show_managed_approval_plan(OPERATION_MANAGER)
+            approve_operation()
 
         elif choice == "6":
-            approve_operation()
+            full_import_preflight()
 
         elif choice == "7":
             execute_current_operation()
 
         elif choice == "8":
             show_operation_history(
-                CONFIG.report_directory / "operations"
+                CONFIG.report_directory
+                / "operations"
             )
 
         elif choice == "9":
-            show_parser_diagnostics(SHUTTLE)
+            receive_shuttle()
 
         elif choice == "10":
-            library_health()
+            show_parser_diagnostics(
+                SHUTTLE
+            )
 
         elif choice == "11":
-            duplicate_inspector()
+            library_health()
 
         elif choice == "12":
-            show_repair_queue()
+            duplicate_inspector()
 
         elif choice == "13":
-            ship_mode()
+            show_repair_queue()
 
         elif choice == "14":
-            show_dashboard(MOVIES, TV, SHUTTLE)
+            ship_mode()
 
         elif choice == "15":
-            clear_operation()
+            show_dashboard(
+                MOVIES,
+                TV,
+                SHUTTLE,
+            )
 
         elif choice == "16":
-            print("Securing DeckFlix console.")
+            clear_operation()
+
+        elif choice == "17":
+            print(
+                "Securing DeckFlix console."
+            )
             break
 
         else:
             print("Invalid option.")
 
-        input("\nPress Enter to return to menu...")
+        input(
+            "\nPress Enter to return to menu..."
+        )
 
 
 def duplicate_inspector():

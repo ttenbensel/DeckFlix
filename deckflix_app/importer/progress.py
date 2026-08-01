@@ -9,6 +9,7 @@ class ImportStage(str, Enum):
     VERIFYING = "VERIFYING"
     MOVING = "MOVING"
     COMPLETED = "COMPLETED"
+    RESUMED = "RESUMED"
     FAILED = "FAILED"
     FINISHED = "FINISHED"
 

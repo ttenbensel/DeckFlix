@@ -3,8 +3,8 @@ from pathlib import Path
 
 from deckflix_app.decision import ApprovalStatus
 from deckflix_app.importer import (
-    ImportEngine,
     ImportJob,
+    ResumableImportExecutor,
     ImportQueue,
     ShuttleCertificate,
     ShuttleSafetyChecker,
@@ -89,6 +89,7 @@ def build_operation_import_queue(
     *,
     movie_library: Path,
     tv_library: Path,
+    allow_existing_destinations: bool = False,
 ) -> ImportQueue:
     manager.require_valid_snapshot()
 
@@ -115,7 +116,10 @@ def build_operation_import_queue(
             tv_library=tv_library,
         )
 
-        if destination.exists():
+        if (
+            destination.exists()
+            and not allow_existing_destinations
+        ):
             raise FileExistsError(
                 f"Destination already exists: {destination}"
             )
@@ -140,6 +144,7 @@ def execute_operation(
     read_only: bool,
     progress=None,
     history_directory: Path | None = None,
+    journal_path: Path | None = None,
 ) -> ShuttleCertificate | None:
     operation = manager.require_operation()
 
@@ -156,6 +161,7 @@ def execute_operation(
         manager,
         movie_library=movie_library,
         tv_library=tv_library,
+        allow_existing_destinations=True,
     )
 
     if not queue.jobs:
@@ -165,9 +171,17 @@ def execute_operation(
 
     manager.begin_import()
 
-    result = ImportEngine().execute(
-        queue,
-        Path(temp_dir),
+    active_journal_path = (
+        Path(journal_path)
+        if journal_path is not None
+        else Path(temp_dir) / "import-journal.json"
+    )
+
+    result = ResumableImportExecutor().execute(
+        operation_id=operation.id,
+        queue=queue,
+        temp_dir=Path(temp_dir),
+        journal_path=active_journal_path,
         progress=progress,
     )
 
