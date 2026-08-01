@@ -37,6 +37,8 @@ def test_safe_when_all_import_checks_pass(tmp_path: Path):
     shuttle.mkdir()
     temp_dir.mkdir()
     destination.parent.mkdir()
+
+    source.write_bytes(b"verified media")
     destination.write_bytes(b"verified media")
 
     queue = ImportQueue()

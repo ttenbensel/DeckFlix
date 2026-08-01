@@ -44,6 +44,17 @@ def print_certificate(certificate: ShuttleCertificate) -> None:
     print(f"Completed      : {result.completed}")
     print(f"Failed         : {result.failed}")
     print()
+    print("Final Destination Audit")
+    print("───────────────────────")
+    print(
+        f"SHA-256       : "
+        f"{safety.audited_files}/{safety.total_files}"
+    )
+    print(
+        f"Audit Status  : "
+        f"{'PASS' if safety.audit_complete else 'FAIL'}"
+    )
+    print()
     print(f"Trust Score    : {certificate.trust_score}%")
     print()
     print("Status")

@@ -8,6 +8,7 @@ from deckflix_app.importer import (
     ImportQueue,
     ShuttleCertificate,
     ShuttleSafetyChecker,
+    delete_import_journal,
 )
 
 from .history import (
@@ -183,6 +184,7 @@ def execute_operation(
         temp_dir=Path(temp_dir),
         journal_path=active_journal_path,
         progress=progress,
+        delete_journal_when_complete=False,
     )
 
     safety = ShuttleSafetyChecker().check(
@@ -190,6 +192,9 @@ def execute_operation(
         import_result=result,
         shuttle_path=operation.snapshot.shuttle_path,
         temp_dir=Path(temp_dir),
+        ignored_temp_paths={
+            active_journal_path,
+        },
     )
 
     certificate = ShuttleCertificate(
@@ -199,16 +204,26 @@ def execute_operation(
         created_at=datetime.now(),
     )
 
-    manager.complete(
-        import_result=result,
-        certificate=certificate,
-    )
-
-    if history_directory is not None:
-        record = record_from_manager(manager)
-        save_history_record(
-            record,
-            Path(history_directory),
+    if safety.safe:
+        delete_import_journal(
+            active_journal_path
         )
+
+        manager.complete(
+            import_result=result,
+            certificate=certificate,
+        )
+
+        if history_directory is not None:
+            record = record_from_manager(manager)
+            save_history_record(
+                record,
+                Path(history_directory),
+            )
+
+    else:
+        manager.pause_import()
+        manager.import_result = result
+        manager.certificate = certificate
 
     return certificate

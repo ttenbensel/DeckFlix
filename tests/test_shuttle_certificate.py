@@ -19,6 +19,8 @@ def test_safe_certificate_has_full_trust(tmp_path: Path):
         safety=ShuttleSafetyResult(
             safe=True,
             reasons=[],
+            audited_files=2,
+            total_files=2,
         ),
         created_at=datetime(2026, 8, 1, 12, 0, 0),
     )
@@ -40,6 +42,8 @@ def test_unsafe_certificate_reduces_trust(tmp_path: Path):
                 "One import failed",
                 "One job remains pending",
             ],
+            audited_files=1,
+            total_files=2,
         ),
         created_at=datetime(2026, 8, 1, 12, 0, 0),
     )
