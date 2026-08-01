@@ -11,7 +11,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     commands = parser.add_subparsers(
         dest="command",
-        required=True,
+        required=False,
     )
 
     commands.add_parser(
@@ -42,6 +42,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.command is None:
+        from deckflix_app.app import main as run_home
+
+        run_home()
+        return
 
     if args.command == "home":
         from deckflix_app.app import main as run_home
