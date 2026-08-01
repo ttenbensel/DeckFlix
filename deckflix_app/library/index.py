@@ -3,14 +3,41 @@ from dataclasses import dataclass, field
 from deckflix_app.metadata.models import MediaMetadata
 
 
+MediaKey = (
+    tuple[str, str, int | None]
+    | tuple[str, str, int | None, int | None]
+)
+
+
+def media_key(media: MediaMetadata) -> MediaKey:
+    title = media.title.casefold().strip()
+
+    if media.media_type == "tv":
+        return (
+            "tv",
+            title,
+            media.season,
+            media.episode,
+        )
+
+    return (
+        "movie",
+        title,
+        media.year,
+    )
+
+
 @dataclass(slots=True)
 class LibraryIndex:
-    movies: dict[tuple[str, int | None], MediaMetadata] = field(default_factory=dict)
+    items: dict[MediaKey, MediaMetadata] = field(
+        default_factory=dict
+    )
 
     def add(self, media: MediaMetadata) -> None:
-        key = (media.title.casefold(), media.year)
-        self.movies[key] = media
+        self.items[media_key(media)] = media
 
-    def find(self, media: MediaMetadata) -> MediaMetadata | None:
-        key = (media.title.casefold(), media.year)
-        return self.movies.get(key)
+    def find(
+        self,
+        media: MediaMetadata,
+    ) -> MediaMetadata | None:
+        return self.items.get(media_key(media))
