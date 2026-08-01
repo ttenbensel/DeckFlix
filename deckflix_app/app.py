@@ -20,6 +20,7 @@ from deckflix_app.screens import (
     show_managed_approval_plan,
     show_managed_decision_queue,
     show_operation_dashboard,
+    show_operation_history,
     show_parser_diagnostics,
     show_receive_shuttle,
 )
@@ -430,14 +431,15 @@ def main():
         print("5. Decision Approval")
         print("6. Approve Ready Imports")
         print("7. Execute Operation")
-        print("8. Parser Diagnostics")
-        print("9. Library Health")
-        print("10. Duplicate Inspector")
-        print("11. Repair Queue")
-        print("12. Ship Mode")
-        print("13. Bridge Dashboard")
-        print("14. Clear Current Operation")
-        print("15. Exit")
+        print("8. Operation History")
+        print("9. Parser Diagnostics")
+        print("10. Library Health")
+        print("11. Duplicate Inspector")
+        print("12. Repair Queue")
+        print("13. Ship Mode")
+        print("14. Bridge Dashboard")
+        print("15. Clear Current Operation")
+        print("16. Exit")
         print()
 
         choice = input("Select option: ").strip()
@@ -455,14 +457,10 @@ def main():
             receive_shuttle()
 
         elif choice == "4":
-            show_managed_decision_queue(
-                OPERATION_MANAGER
-            )
+            show_managed_decision_queue(OPERATION_MANAGER)
 
         elif choice == "5":
-            show_managed_approval_plan(
-                OPERATION_MANAGER
-            )
+            show_managed_approval_plan(OPERATION_MANAGER)
 
         elif choice == "6":
             approve_operation()
@@ -471,27 +469,32 @@ def main():
             execute_current_operation()
 
         elif choice == "8":
-            show_parser_diagnostics(SHUTTLE)
+            show_operation_history(
+                CONFIG.report_directory / "operations"
+            )
 
         elif choice == "9":
-            library_health()
+            show_parser_diagnostics(SHUTTLE)
 
         elif choice == "10":
-            duplicate_inspector()
+            library_health()
 
         elif choice == "11":
-            show_repair_queue()
+            duplicate_inspector()
 
         elif choice == "12":
-            ship_mode()
+            show_repair_queue()
 
         elif choice == "13":
-            show_dashboard(MOVIES, TV, SHUTTLE)
+            ship_mode()
 
         elif choice == "14":
-            clear_operation()
+            show_dashboard(MOVIES, TV, SHUTTLE)
 
         elif choice == "15":
+            clear_operation()
+
+        elif choice == "16":
             print("Securing DeckFlix console.")
             break
 
