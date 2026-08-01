@@ -30,6 +30,12 @@ from deckflix_app.system_verification import run_system_verification
 from deckflix_app.library_health import show_library_health
 from deckflix_app.duplicate_inspector import show_duplicate_inspector
 from deckflix_app.repair_queue_screen import show_repair_queue
+from deckflix_app.maintenance_ui import (
+    system_verification,
+    library_health,
+    repair_preview,
+    duplicate_inspector,
+)
 
 
 CONFIG = load_config()
@@ -212,20 +218,6 @@ def approve_operation():
 
 
 
-
-def system_verification():
-    print()
-    print("Running DeckFlix system verification...")
-
-    result = run_system_verification(
-        config=CONFIG,
-        operation_manager=OPERATION_MANAGER,
-        temp_directory=Path(
-            "/tmp/deckflix-import"
-        ),
-    )
-
-    show_system_verification(result)
 
 def full_import_preflight():
     print()
@@ -435,97 +427,6 @@ def execute_current_operation():
         )
         print_certificate(certificate)
 
-def library_health():
-    show_library_health(
-        MOVIES,
-        TV,
-    )
-
-    input("\nPress Enter to return to the main menu...")
-
-
-def repair_preview():
-    report = library_report(MOVIES, TV)
-
-    while True:
-        print()
-        print("Repair Preview")
-        print("──────────────")
-        print("Dry-run only. Nothing will be moved, renamed, or deleted.")
-        print()
-        print(f"1. Review sample/junk files       {len(report['junk'])}")
-        print(f"2. Review nested movie warnings   {len(report['nested'])}")
-        print(f"3. Review duplicate groups        {len(report['duplicates'])}")
-        print("4. Quarantine information")
-        print("5. Back")
-        print()
-
-        choice = input("Select repair option: ").strip()
-
-        if choice == "1":
-            print()
-            print("Sample/Junk Files")
-            print("─────────────────")
-            if report["junk"]:
-                for file in report["junk"]:
-                    print(f"[WOULD QUARANTINE] {file}")
-            else:
-                print("None found")
-            input("\nPress Enter to continue...")
-
-        elif choice == "2":
-            print()
-            print("Nested Movie Warnings")
-            print("─────────────────────")
-            if report["nested"]:
-                for file in report["nested"][:50]:
-                    print(f"[WOULD REVIEW MOVE] {file}")
-                if len(report["nested"]) > 50:
-                    print(f"...and {len(report['nested']) - 50} more")
-            else:
-                print("None found")
-            input("\nPress Enter to continue...")
-
-        elif choice == "3":
-            print()
-            print("Duplicate Review")
-            print("────────────────")
-            shown = 0
-            for title, files in sorted(report["duplicates"].items()):
-                ranked = sorted(files, key=quality_score, reverse=True)
-                keep = ranked[0]
-
-                print()
-                print(title.title())
-                print(f"[KEEP]   score {quality_score(keep):>3} {size_gb(keep):>5.1f} GB {keep}")
-
-                for file in ranked[1:]:
-                    print(f"[REVIEW] score {quality_score(file):>3} {size_gb(file):>5.1f} GB {file}")
-
-                shown += 1
-                if shown >= 20:
-                    break
-
-            input("\nPress Enter to continue...")
-
-        elif choice == "4":
-            print()
-            print("Quarantine")
-            print("──────────")
-            print("Future repair actions will move files here first:")
-            print(QUARANTINE)
-            print()
-            print("DeckFlix rule:")
-            print("Never delete first. Quarantine, verify, then remove later.")
-            input("\nPress Enter to continue...")
-
-        elif choice == "5":
-            break
-
-        else:
-            print("Invalid option.")
-
-
 def main():
     while True:
         logo()
@@ -624,10 +525,3 @@ def main():
         )
 
 
-def duplicate_inspector():
-    show_duplicate_inspector(
-        MOVIES,
-        TV,
-    )
-
-    input("\nPress Enter to return to the main menu...")
