@@ -7,6 +7,7 @@ from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 from deckflix_app.screens import (
+    show_approval_plan,
     show_decision_queue,
     show_parser_diagnostics,
     show_receive_shuttle,
@@ -201,7 +202,8 @@ def main():
         print("7. Ship Mode")
         print("8. Parser Diagnostics")
         print("9. Decision Queue")
-        print("10. Exit")
+        print("10. Decision Approval")
+        print("11. Exit")
         print()
 
         choice = input("Select option: ").strip()
@@ -241,6 +243,13 @@ def main():
             )
 
         elif choice == "10":
+            show_approval_plan(
+                shuttle_path=SHUTTLE,
+                movie_libraries=CONFIG.movie_libraries,
+                tv_libraries=CONFIG.tv_libraries,
+            )
+
+        elif choice == "11":
             print("Securing DeckFlix console.")
             break
 

@@ -1,3 +1,10 @@
+from .approval import (
+    ApprovalItem,
+    ApprovalPlan,
+    ApprovalStatus,
+    build_approval_plan,
+    default_approval_status,
+)
 from .queue import (
     DecisionQueue,
     DecisionQueueItem,
@@ -10,6 +17,11 @@ from .engine import decide
 from .models import Decision
 
 __all__ = [
+    "ApprovalItem",
+    "ApprovalPlan",
+    "ApprovalStatus",
+    "build_approval_plan",
+    "default_approval_status",
     "DecisionQueue",
     "DecisionQueueItem",
     "build_decision_queue",
