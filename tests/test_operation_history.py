@@ -42,6 +42,7 @@ def test_completed_operation_saves_history(
     )
 
     approve_ready_items(manager)
+    manager.authorize_import()
 
     certificate = execute_operation(
         manager,

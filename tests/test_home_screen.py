@@ -124,7 +124,7 @@ def test_approved_safe_mode_recommends_disable(
     assert recommended_action(
         manager,
         read_only=True,
-    ) == "Unlock Library to Begin Import"
+    ) == "Enable Import Mode"
 
 
 def test_approved_import_mode_recommends_execute(

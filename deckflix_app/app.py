@@ -265,6 +265,76 @@ def full_import_preflight():
         read_only=CONFIG.read_only,
     )
 
+
+def enable_import_mode():
+    print()
+    print("Enable Import Mode")
+    print("══════════════════")
+
+    if not OPERATION_MANAGER.active:
+        print()
+        print("No operation is active.")
+        return
+
+    operation = OPERATION_MANAGER.require_operation()
+
+    if operation.state.value != "APPROVED":
+        print()
+        print(
+            "The operation must be APPROVED before "
+            "Import Mode can be enabled."
+        )
+        return
+
+    if OPERATION_MANAGER.import_authorized:
+        print()
+        print("Import Mode is already enabled.")
+        return
+
+    print()
+    print(f"Operation           {operation.id}")
+    print(
+        f"Approved files      "
+        f"{OPERATION_MANAGER.approval_plan.count(ApprovalStatus.APPROVED)}"
+    )
+    print()
+    print("Library Protection will remain enabled globally.")
+    print(
+        "Only this approved operation will receive "
+        "temporary write permission."
+    )
+    print()
+    print("Import Mode will automatically switch off after:")
+    print("- successful completion")
+    print("- Ctrl+C pause")
+    print("- an import failure")
+    print("- clearing the operation")
+    print()
+
+    answer = input(
+        "Enable Import Mode for this operation? (y/N): "
+    ).strip().lower()
+
+    if answer != "y":
+        print("Import Mode remains disabled.")
+        return
+
+    try:
+        OPERATION_MANAGER.authorize_import()
+    except InvalidOperationTransition as exc:
+        print()
+        print(f"Import Mode could not be enabled: {exc}")
+        return
+
+    save_operation_manager(
+        OPERATION_MANAGER,
+        OPERATION_STATE_PATH,
+    )
+
+    print()
+    print("Import Mode enabled for this operation.")
+    print("Library Protection remains active for all other actions.")
+
 def execute_current_operation():
     print()
     print("Execute Operation")
@@ -275,12 +345,15 @@ def execute_current_operation():
         print("No operation is active.")
         return
 
-    if CONFIG.read_only:
+    if (
+        CONFIG.read_only
+        and not OPERATION_MANAGER.import_authorized
+    ):
         print()
         print("IMPORT BLOCKED")
         print("──────────────")
         print("Library Protection is enabled.")
-        print("Approved imports cannot modify the libraries.")
+        print("Enable Import Mode for this approved operation first.")
         print()
         print("No files have been copied, moved, or deleted.")
         return
@@ -303,7 +376,12 @@ def execute_current_operation():
             movie_library=MOVIES,
             tv_library=TV,
             temp_dir=Path("/tmp/deckflix-import"),
-            read_only=CONFIG.read_only,
+            read_only=(
+                CONFIG.read_only
+                and (
+                    not OPERATION_MANAGER.import_authorized
+                )
+            ),
             progress=monitor,
             history_directory=(
                 CONFIG.report_directory
@@ -564,16 +642,16 @@ def main():
         print("4. Decision Approval")
         print("5. Approve Ready Imports")
         print("6. Full Import Preflight")
-        print("7. Execute Operation")
-        print("8. System Verification")
-        print("9. Operating Mode")
-        print("10. Operation History")
-        print("11. Receive Shuttle Preview")
-        print("12. Parser Diagnostics")
-        print("13. Library Health")
-        print("14. Duplicate Inspector")
-        print("15. Repair Queue")
-        print("16. Ship Mode (Legacy)")
+        print("7. Enable Import Mode")
+        print("8. Execute Operation")
+        print("9. System Verification")
+        print("10. Operating Mode")
+        print("11. Operation History")
+        print("12. Receive Shuttle Preview")
+        print("13. Parser Diagnostics")
+        print("14. Library Health")
+        print("15. Duplicate Inspector")
+        print("16. Repair Queue")
         print("17. Bridge Dashboard")
         print("18. Clear Current Operation")
         print("19. Exit")
@@ -607,12 +685,15 @@ def main():
             full_import_preflight()
 
         elif choice == "7":
-            execute_current_operation()
+            enable_import_mode()
 
         elif choice == "8":
-            system_verification()
+            execute_current_operation()
 
         elif choice == "9":
+            system_verification()
+
+        elif choice == "10":
             changed = show_operating_modes(CONFIG)
 
             if changed:
@@ -622,29 +703,26 @@ def main():
                     "starting or continuing an operation."
                 )
 
-        elif choice == "10":
+        elif choice == "11":
             show_operation_history(
                 CONFIG.report_directory
                 / "operations"
             )
 
-        elif choice == "11":
+        elif choice == "12":
             receive_shuttle()
 
-        elif choice == "12":
+        elif choice == "13":
             show_parser_diagnostics(SHUTTLE)
 
-        elif choice == "13":
+        elif choice == "14":
             library_health()
 
-        elif choice == "14":
+        elif choice == "15":
             duplicate_inspector()
 
-        elif choice == "15":
-            show_repair_queue()
-
         elif choice == "16":
-            ship_mode()
+            show_repair_queue()
 
         elif choice == "17":
             show_dashboard(

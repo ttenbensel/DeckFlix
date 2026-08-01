@@ -189,6 +189,7 @@ def manager_to_dict(manager: OperationManager) -> dict:
             for item in queue_items
         ],
         "approval_statuses": approval_statuses,
+        "import_authorized": manager.import_authorized,
     }
 
 
@@ -208,6 +209,10 @@ def manager_from_dict(data: dict) -> OperationManager:
         manager.decisions = DecisionQueue(
             items=decision_items
         )
+
+    manager.import_authorized = bool(
+        data.get("import_authorized", False)
+    )
 
     statuses = data.get("approval_statuses", [])
 

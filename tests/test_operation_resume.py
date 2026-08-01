@@ -49,6 +49,7 @@ def test_operation_resumes_after_interruption(
     )
 
     approve_ready_items(manager)
+    manager.authorize_import()
 
     completed = 0
 
@@ -79,6 +80,7 @@ def test_operation_resumes_after_interruption(
         snapshot=manager.operation.snapshot,
         created_at=manager.operation.created_at,
     )
+    manager.authorize_import()
 
     certificate = execute_operation(
         manager,

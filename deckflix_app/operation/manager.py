@@ -31,6 +31,7 @@ class OperationManager:
         self.approval_plan: Any | None = None
         self.import_result: Any | None = None
         self.certificate: Any | None = None
+        self.import_authorized: bool = False
 
     @property
     def active(self) -> bool:
@@ -63,6 +64,7 @@ class OperationManager:
         self.approval_plan = None
         self.import_result = None
         self.certificate = None
+        self.import_authorized = False
 
         return self.operation
 
@@ -147,6 +149,21 @@ class OperationManager:
             state=OperationState.APPROVED,
         )
 
+    def authorize_import(self) -> None:
+        operation = self.require_operation()
+
+        if operation.state is not OperationState.APPROVED:
+            raise InvalidOperationTransition(
+                f"Cannot enable Import Mode while state is "
+                f"{operation.state.value}"
+            )
+
+        self.require_valid_snapshot()
+        self.import_authorized = True
+
+    def revoke_import_authorization(self) -> None:
+        self.import_authorized = False
+
     def begin_import(self) -> None:
         operation = self.require_operation()
 
@@ -157,6 +174,11 @@ class OperationManager:
             )
 
         self.require_valid_snapshot()
+
+        if not self.import_authorized:
+            raise InvalidOperationTransition(
+                "Import Mode has not been enabled"
+            )
 
         self.operation = replace(
             operation,
@@ -176,6 +198,7 @@ class OperationManager:
             operation,
             state=OperationState.APPROVED,
         )
+        self.import_authorized = False
 
     def complete(
         self,
@@ -198,6 +221,7 @@ class OperationManager:
             operation,
             state=OperationState.COMPLETE,
         )
+        self.import_authorized = False
 
     def clear(self) -> None:
         self.operation = None
@@ -205,3 +229,4 @@ class OperationManager:
         self.approval_plan = None
         self.import_result = None
         self.certificate = None
+        self.import_authorized = False

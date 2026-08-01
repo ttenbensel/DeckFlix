@@ -89,6 +89,7 @@ def test_read_only_execution_changes_nothing(
         tmp_path
     )
     approve_ready_items(manager)
+    manager.authorize_import()
 
     certificate = execute_operation(
         manager,
@@ -109,6 +110,7 @@ def test_execute_approved_operation(tmp_path: Path):
         tmp_path
     )
     approve_ready_items(manager)
+    manager.authorize_import()
 
     certificate = execute_operation(
         manager,

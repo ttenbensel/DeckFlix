@@ -40,8 +40,11 @@ def recommended_action(
         return "Review Operation"
 
     if state is OperationState.APPROVED:
+        if manager.import_authorized:
+            return "Execute Approved Import"
+
         if read_only:
-            return "Unlock Library to Begin Import"
+            return "Enable Import Mode"
 
         return "Execute Approved Import"
 

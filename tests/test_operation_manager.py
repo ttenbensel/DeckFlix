@@ -98,6 +98,7 @@ def test_manager_moves_through_import_to_complete(
     manager.attach_decisions(object())
     manager.attach_approval_plan(object())
     manager.approve()
+    manager.authorize_import()
 
     manager.begin_import()
 
@@ -171,6 +172,7 @@ def test_manager_can_pause_active_import(
     manager.attach_decisions(object())
     manager.attach_approval_plan(object())
     manager.approve()
+    manager.authorize_import()
     manager.begin_import()
 
     manager.pause_import()

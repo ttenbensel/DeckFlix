@@ -67,6 +67,8 @@ def test_complete_sandbox_import_operation(
         OperationState.APPROVED
     )
 
+    manager.authorize_import()
+
     events = []
 
     certificate = execute_operation(
