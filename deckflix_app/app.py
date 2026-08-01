@@ -6,6 +6,7 @@ from deckflix_app.import_queue import build_import_queue
 from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
+from deckflix_app.screens import show_receive_shuttle
 from deckflix_app.import_runner import run_import
 from deckflix_app.version import APP_NAME, VERSION, CODENAME
 from deckflix_app.library_health import show_library_health
@@ -37,82 +38,11 @@ def build_current_queue():
     return build_import_queue(comparison, library_movies)
 
 
-def print_movie_item(item, prefix):
-    if item.year:
-        print(f"{prefix} 🎬 {item.title} ({item.year})")
-    else:
-        print(f"{prefix} 🎬 {item.title}")
-
-
-def print_tv_item(item, prefix):
-    print(f"{prefix} 📺 {item.title} S{item.season:02d}E{item.episode:02d}")
-
-
-def print_media_item(item, prefix):
-    if item.media_type == "tv":
-        print_tv_item(item, prefix)
-    else:
-        print_movie_item(item, prefix)
-
-
 def receive_shuttle():
-    shuttle = shuttle_scan(SHUTTLE)
-    library_movies = scan_videos(MOVIES)
-    comparison = compare_to_library(shuttle["media"], library_movies)
-    storage = shuttle["storage"]
-
-    print()
-    print("Receive Shuttle")
-    print("═══════════════")
-    print("Dry-run only. Nothing will be copied, moved, or deleted.")
-    print()
-
-    print("Drive")
-    print("─────")
-    if shuttle["connected"]:
-        print("Status              Connected")
-    else:
-        print("Status              Not Found")
-
-    print(f"Path                {shuttle['path']}")
-
-    if storage["available"]:
-        print(f"Capacity            {storage['total_tb']:.2f} TB")
-        print(f"Used                {storage['used_tb']:.2f} TB")
-        print(f"Free                {storage['free_tb']:.2f} TB")
-
-    print()
-    print("Media Summary")
-    print("─────────────")
-    print(f"Video files          {len(shuttle['files'])}")
-    print(f"Movies found         {len(shuttle['movies'])}")
-    print(f"TV episodes found    {len(shuttle['tv'])}")
-    print()
-    print(f"New items            {len(comparison['new_media'])}")
-    print(f"Possible duplicates  {len(comparison['duplicates'])}")
-
-    print()
-    print("Import Preview")
-    print("──────────────")
-
-    if not shuttle["files"]:
-        print("No shuttle media found.")
-    else:
-        if comparison["new_media"]:
-            print("New media")
-            print("─────────")
-            for item in comparison["new_media"][:20]:
-                print_media_item(item, "[NEW]")
-
-        if comparison["duplicates"]:
-            print()
-            print("Needs review")
-            print("────────────")
-            for item in comparison["duplicates"][:20]:
-                print_media_item(item, "[DUPLICATE]")
-
-    print()
-    print("Nothing has been changed.")
+    show_receive_shuttle(
+        shuttle_path=SHUTTLE,
+        movie_library_path=MOVIES,
+    )
 
 
 def import_queue():
