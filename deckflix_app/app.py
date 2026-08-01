@@ -21,6 +21,7 @@ from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 from deckflix_app.screens import (
+    show_operating_modes,
     show_system_verification,
     TerminalImportMonitor,
     show_managed_approval_plan,
@@ -278,8 +279,8 @@ def execute_current_operation():
         print()
         print("IMPORT BLOCKED")
         print("──────────────")
-        print("DeckFlix is currently in SAFE MODE.")
-        print("Configuration setting: read_only = true")
+        print("Library Protection is enabled.")
+        print("Approved imports cannot modify the libraries.")
         print()
         print("No files have been copied, moved, or deleted.")
         return
@@ -565,16 +566,17 @@ def main():
         print("6. Full Import Preflight")
         print("7. Execute Operation")
         print("8. System Verification")
-        print("9. Operation History")
-        print("10. Receive Shuttle Preview")
-        print("11. Parser Diagnostics")
-        print("12. Library Health")
-        print("13. Duplicate Inspector")
-        print("14. Repair Queue")
-        print("15. Ship Mode")
-        print("16. Bridge Dashboard")
-        print("17. Clear Current Operation")
-        print("18. Exit")
+        print("9. Operating Mode")
+        print("10. Operation History")
+        print("11. Receive Shuttle Preview")
+        print("12. Parser Diagnostics")
+        print("13. Library Health")
+        print("14. Duplicate Inspector")
+        print("15. Repair Queue")
+        print("16. Ship Mode (Legacy)")
+        print("17. Bridge Dashboard")
+        print("18. Clear Current Operation")
+        print("19. Exit")
         print()
 
         choice = input("Select option: ").strip()
@@ -611,53 +613,57 @@ def main():
             system_verification()
 
         elif choice == "9":
+            changed = show_operating_modes(CONFIG)
+
+            if changed:
+                print()
+                print(
+                    "Exit and relaunch DeckFlix before "
+                    "starting or continuing an operation."
+                )
+
+        elif choice == "10":
             show_operation_history(
                 CONFIG.report_directory
                 / "operations"
             )
 
-        elif choice == "10":
+        elif choice == "11":
             receive_shuttle()
 
-        elif choice == "11":
-            show_parser_diagnostics(
-                SHUTTLE
-            )
-
         elif choice == "12":
-            library_health()
+            show_parser_diagnostics(SHUTTLE)
 
         elif choice == "13":
-            duplicate_inspector()
+            library_health()
 
         elif choice == "14":
-            show_repair_queue()
+            duplicate_inspector()
 
         elif choice == "15":
-            ship_mode()
+            show_repair_queue()
 
         elif choice == "16":
+            ship_mode()
+
+        elif choice == "17":
             show_dashboard(
                 MOVIES,
                 TV,
                 SHUTTLE,
             )
 
-        elif choice == "17":
+        elif choice == "18":
             clear_operation()
 
-        elif choice == "18":
-            print(
-                "Securing DeckFlix console."
-            )
+        elif choice == "19":
+            print("Securing DeckFlix console.")
             break
 
         else:
             print("Invalid option.")
 
-        input(
-            "\nPress Enter to return to menu..."
-        )
+        input("\nPress Enter to return to menu...")
 
 
 def duplicate_inspector():

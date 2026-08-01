@@ -288,7 +288,7 @@ def run_system_verification(
 
     checks.append(
         VerificationCheck(
-            name="Safe Mode",
+            name="Library Protection",
             passed=bool(config.read_only),
             detail=(
                 "Enabled"

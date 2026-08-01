@@ -28,6 +28,12 @@ def make_config(
     movies.mkdir()
     tv.mkdir()
 
+    config_path = tmp_path / "local.json"
+    config_path.write_text(
+        '{"operating_mode": "passage"}',
+        encoding="utf-8",
+    )
+
     return SimpleNamespace(
         shuttle=shuttle,
         movie_libraries=[movies],
@@ -35,6 +41,12 @@ def make_config(
         read_only=read_only,
         operating_profile="ship_limited",
         low_impact=True,
+        source_path=config_path,
+        network=SimpleNamespace(
+            allow_metadata_downloads=False,
+            allow_jellyfin_refresh=True,
+            max_download_mbps=5,
+        ),
     )
 
 
@@ -118,7 +130,7 @@ def test_approved_safe_mode_recommends_disable(
     assert recommended_action(
         manager,
         read_only=True,
-    ) == "Disable Safe Mode Before Import"
+    ) == "Unlock Library to Begin Import"
 
 
 def test_approved_import_mode_recommends_execute(
@@ -156,8 +168,8 @@ def test_home_screen_shows_system_state(
     assert "DECKFLIX" in output
     assert "Connected" in output
     assert "2/2" in output
-    assert "SAFE MODE" in output
-    assert "ship_limited" in output
+    assert "Passage" in output
+    assert "Protection" in output
     assert "Enabled" in output
     assert "No active operation" in output
     assert "Begin Shuttle Operation" in output

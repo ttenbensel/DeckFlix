@@ -2,6 +2,7 @@ from pathlib import Path
 
 from deckflix_app.decision import ApprovalStatus
 from deckflix_app.operation import OperationManager, OperationState
+from deckflix_app.operating_modes import infer_operating_mode
 
 
 def path_status(path: Path) -> str:
@@ -44,7 +45,7 @@ def recommended_action(
 
     if state is OperationState.APPROVED:
         if read_only:
-            return "Disable Safe Mode Before Import"
+            return "Unlock Library to Begin Import"
 
         return "Execute Approved Import"
 
@@ -178,24 +179,40 @@ def show_home_screen(
         f"{online_libraries}/{len(libraries)}"
     )
 
-    print(
-        f" Mode        "
-        f"● {mode_name(config.read_only)}"
-    )
-
-    print(
-        f" Profile     "
-        f"{config.operating_profile}"
-    )
-
-    print(
-        f" Low Impact  "
-        f"{'● Enabled' if config.low_impact else '○ Disabled'}"
-    )
+    operating_mode = infer_operating_mode(config)
 
     show_operation_summary(
         operation_manager,
         read_only=config.read_only,
+    )
+
+    print()
+    print("System Status")
+    print("─────────────")
+
+    print(
+        f" Operating Mode      "
+        f"{operating_mode.display_name}"
+    )
+
+    print(
+        f" Network             "
+        f"{operating_mode.connectivity}"
+    )
+
+    print(
+        f" Library Protection  "
+        f"{'🔒 Enabled' if config.read_only else '🔓 Off'}"
+    )
+
+    print(
+        f" Low Impact          "
+        f"{'● Enabled' if config.low_impact else '○ Off'}"
+    )
+
+    print(
+        f"                     "
+        f"{operating_mode.motto}"
     )
 
     print()

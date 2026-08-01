@@ -39,7 +39,7 @@ def show_import_preflight(
     print()
 
     print("Operation")
-    print("─────────")
+    print("──────────────────")
     print(
         f"Approved files       "
         f"{result.approved_files}"
@@ -121,7 +121,7 @@ def show_import_preflight(
     )
 
     print()
-    print("Safe Mode")
+    print("Library Protection")
     print("─────────")
     print(
         "Enabled"
@@ -186,7 +186,7 @@ def show_import_preflight(
         print()
         print(
             "Preflight passed, but execution remains "
-            "blocked by Safe Mode."
+            "blocked by Library Protection."
         )
 
     print()

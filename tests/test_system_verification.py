@@ -82,7 +82,7 @@ def test_system_verification_requires_safe_mode(
 
     assert result.ready is False
     assert any(
-        check.name == "Safe Mode"
+        check.name == "Library Protection"
         and check.passed is False
         for check in result.checks
     )
