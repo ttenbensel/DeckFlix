@@ -22,7 +22,7 @@ def system_verification(
         config=config,
         operation_manager=operation_manager,
         temp_directory=Path(
-            "/tmp/deckflix-import"
+            str(config.import_staging_directory)
         ),
     )
 

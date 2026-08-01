@@ -30,6 +30,7 @@ def make_config(
         movie_libraries=(Path("/data/library1/movie"),),
         tv_libraries=(Path("/data/library2/tv"),),
         report_directory=Path("/data/library1/deckflix-logs"),
+            import_staging_directory=Path("/data/library1/deckflix-staging"),
         paths=DeckFlixPaths(
             quarantine=Path("/data/library1/deckflix-quarantine"),
             repair_log=Path("/data/library1/deckflix-logs/repair.log"),

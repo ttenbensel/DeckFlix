@@ -186,9 +186,7 @@ def full_import_preflight(
             operation_manager,
             movie_library=movies,
             tv_library=tv,
-            temp_dir=Path(
-                "/tmp/deckflix-import"
-            ),
+            temp_dir=config.import_staging_directory,
         )
     except Exception as exc:
         print()
@@ -275,7 +273,13 @@ def enable_import_mode(
     print("Import Mode enabled for this operation.")
     print("Library Protection remains active for all other actions.")
 
-def execute_current_operation():
+def execute_current_operation(
+    operation_manager,
+    movies,
+    tv,
+    config,
+    operation_state_path,
+):
     print()
     print("Execute Operation")
     print("═════════════════")
@@ -315,7 +319,7 @@ def execute_current_operation():
             operation_manager,
             movie_library=movies,
             tv_library=tv,
-            temp_dir=Path("/tmp/deckflix-import"),
+            temp_dir=config.import_staging_directory,
             read_only=(
                 config.read_only
                 and (

@@ -13,7 +13,6 @@ from deckflix_app.importer import (
 from deckflix_app.importer.legacy import build_import_plan
 
 
-TEMP_IMPORT_DIRECTORY = Path("/tmp/deckflix-import")
 
 
 def run_import(
@@ -21,6 +20,7 @@ def run_import(
     movies_path,
     tv_path,
     shuttle_path=Path("/data/shuttle"),
+    staging_directory=Path("/tmp/deckflix-import"),
 ):
     approved = approve_imports(queue)
 
@@ -44,14 +44,14 @@ def run_import(
 
     result = ImportEngine().execute(
         import_queue,
-        TEMP_IMPORT_DIRECTORY,
+        staging_directory,
     )
 
     safety = ShuttleSafetyChecker().check(
         queue=import_queue,
         import_result=result,
         shuttle_path=Path(shuttle_path),
-        temp_dir=TEMP_IMPORT_DIRECTORY,
+        temp_dir=staging_directory,
     )
 
     certificate = ShuttleCertificate(

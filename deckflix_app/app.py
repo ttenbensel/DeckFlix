@@ -134,7 +134,13 @@ def main():
             )
 
         elif choice == "7":
-            execute_current_operation()
+            execute_current_operation(
+                operation_manager=OPERATION_MANAGER,
+                movies=MOVIES,
+                tv=TV,
+                config=CONFIG,
+                operation_state_path=OPERATION_STATE_PATH,
+            )
 
         elif choice == "8":
             show_operation_history(

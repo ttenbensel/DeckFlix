@@ -50,6 +50,7 @@ class DeckFlixConfig:
     movie_libraries: tuple[Path, ...]
     tv_libraries: tuple[Path, ...]
     report_directory: Path
+    import_staging_directory: Path
     paths: DeckFlixPaths
     read_only: bool
     operating_profile: str
@@ -214,6 +215,9 @@ def load_config(
         report_directory=Path(
             _require_string(raw_data, "report_directory")
         ).expanduser(),
+        import_staging_directory=Path(
+            _require_string(raw_data, "import_staging_directory")
+        ).expanduser(),
         paths=DeckFlixPaths(
             quarantine=Path(
                 _require_string(raw_data, "quarantine_directory")
@@ -269,6 +273,10 @@ def validate_config_paths(config: DeckFlixConfig) -> None:
 
     writable_path_parents = (
         ("report_directory", config.report_directory.parent),
+        (
+            "import_staging_directory",
+            config.import_staging_directory.parent,
+        ),
         ("quarantine_directory", config.paths.quarantine.parent),
         ("repair_log", config.paths.repair_log.parent),
     )
