@@ -59,6 +59,9 @@ def import_queue():
 
         choice = input("Select option: ").strip()
 
+        if not choice:
+            continue
+
         if choice == "1":
             success = run_import(
                 queue,
@@ -196,6 +199,9 @@ def main():
         print()
 
         choice = input("Select option: ").strip()
+
+        if not choice:
+            continue
 
         if choice == "1":
             show_dashboard(MOVIES, TV, SHUTTLE)
