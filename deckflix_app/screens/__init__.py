@@ -1,3 +1,4 @@
+from .system_verification import show_system_verification
 from .import_preflight import show_import_preflight
 from .operation_history import show_operation_history
 from .import_monitor import TerminalImportMonitor
@@ -14,6 +15,7 @@ from .parser_diagnostics import show_parser_diagnostics
 from .shuttle import show_receive_shuttle
 
 __all__ = [
+    "show_system_verification",
     "show_import_preflight",
     "show_operation_history",
     "TerminalImportMonitor",

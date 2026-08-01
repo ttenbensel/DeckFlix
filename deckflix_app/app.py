@@ -21,6 +21,7 @@ from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 from deckflix_app.screens import (
+    show_system_verification,
     TerminalImportMonitor,
     show_managed_approval_plan,
     show_managed_decision_queue,
@@ -32,6 +33,7 @@ from deckflix_app.screens import (
 )
 from deckflix_app.import_runner import run_import
 from deckflix_app.version import APP_NAME, VERSION, CODENAME
+from deckflix_app.system_verification import run_system_verification
 from deckflix_app.library_health import show_library_health
 from deckflix_app.duplicate_inspector import show_duplicate_inspector
 from deckflix_app.repair_queue_screen import show_repair_queue
@@ -216,6 +218,21 @@ def approve_operation():
     print("No files have been copied.")
 
 
+
+
+def system_verification():
+    print()
+    print("Running DeckFlix system verification...")
+
+    result = run_system_verification(
+        config=CONFIG,
+        operation_manager=OPERATION_MANAGER,
+        temp_directory=Path(
+            "/tmp/deckflix-import"
+        ),
+    )
+
+    show_system_verification(result)
 
 def full_import_preflight():
     print()
@@ -547,21 +564,20 @@ def main():
         print("5. Approve Ready Imports")
         print("6. Full Import Preflight")
         print("7. Execute Operation")
-        print("8. Operation History")
-        print("9. Receive Shuttle Preview")
-        print("10. Parser Diagnostics")
-        print("11. Library Health")
-        print("12. Duplicate Inspector")
-        print("13. Repair Queue")
-        print("14. Ship Mode")
-        print("15. Bridge Dashboard")
-        print("16. Clear Current Operation")
-        print("17. Exit")
+        print("8. System Verification")
+        print("9. Operation History")
+        print("10. Receive Shuttle Preview")
+        print("11. Parser Diagnostics")
+        print("12. Library Health")
+        print("13. Duplicate Inspector")
+        print("14. Repair Queue")
+        print("15. Ship Mode")
+        print("16. Bridge Dashboard")
+        print("17. Clear Current Operation")
+        print("18. Exit")
         print()
 
-        choice = input(
-            "Select option: "
-        ).strip()
+        choice = input("Select option: ").strip()
 
         if not choice:
             continue
@@ -592,42 +608,45 @@ def main():
             execute_current_operation()
 
         elif choice == "8":
+            system_verification()
+
+        elif choice == "9":
             show_operation_history(
                 CONFIG.report_directory
                 / "operations"
             )
 
-        elif choice == "9":
+        elif choice == "10":
             receive_shuttle()
 
-        elif choice == "10":
+        elif choice == "11":
             show_parser_diagnostics(
                 SHUTTLE
             )
 
-        elif choice == "11":
+        elif choice == "12":
             library_health()
 
-        elif choice == "12":
+        elif choice == "13":
             duplicate_inspector()
 
-        elif choice == "13":
+        elif choice == "14":
             show_repair_queue()
 
-        elif choice == "14":
+        elif choice == "15":
             ship_mode()
 
-        elif choice == "15":
+        elif choice == "16":
             show_dashboard(
                 MOVIES,
                 TV,
                 SHUTTLE,
             )
 
-        elif choice == "16":
+        elif choice == "17":
             clear_operation()
 
-        elif choice == "17":
+        elif choice == "18":
             print(
                 "Securing DeckFlix console."
             )
