@@ -1,3 +1,4 @@
+from .operation_history import show_operation_history
 from .import_monitor import TerminalImportMonitor
 from .operation_dashboard import show_operation_dashboard
 from .approval_plan import (
@@ -12,6 +13,7 @@ from .parser_diagnostics import show_parser_diagnostics
 from .shuttle import show_receive_shuttle
 
 __all__ = [
+    "show_operation_history",
     "TerminalImportMonitor",
     "show_managed_decision_queue",
     "show_managed_approval_plan",

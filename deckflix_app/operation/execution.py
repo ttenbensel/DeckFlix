@@ -10,6 +10,11 @@ from deckflix_app.importer import (
     ShuttleSafetyChecker,
 )
 
+from .history import (
+    record_from_manager,
+    save_history_record,
+)
+
 from .manager import (
     InvalidOperationTransition,
     OperationManager,
@@ -134,6 +139,7 @@ def execute_operation(
     temp_dir: Path,
     read_only: bool,
     progress=None,
+    history_directory: Path | None = None,
 ) -> ShuttleCertificate | None:
     operation = manager.require_operation()
 
@@ -183,5 +189,12 @@ def execute_operation(
         import_result=result,
         certificate=certificate,
     )
+
+    if history_directory is not None:
+        record = record_from_manager(manager)
+        save_history_record(
+            record,
+            Path(history_directory),
+        )
 
     return certificate

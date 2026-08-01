@@ -1,3 +1,10 @@
+from .history import (
+    OperationHistoryRecord,
+    list_history_records,
+    load_history_record,
+    record_from_manager,
+    save_history_record,
+)
 from .execution import (
     approve_ready_items,
     build_operation_import_queue,
@@ -24,6 +31,11 @@ from .snapshot import (
 )
 
 __all__ = [
+    "OperationHistoryRecord",
+    "list_history_records",
+    "load_history_record",
+    "record_from_manager",
+    "save_history_record",
     "approve_ready_items",
     "build_operation_import_queue",
     "destination_for_media",
