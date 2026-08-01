@@ -1,3 +1,8 @@
+from .manager import (
+    InvalidOperationTransition,
+    OperationInvalidated,
+    OperationManager,
+)
 from .models import (
     Operation,
     OperationState,
@@ -12,6 +17,9 @@ from .snapshot import (
 )
 
 __all__ = [
+    "InvalidOperationTransition",
+    "OperationInvalidated",
+    "OperationManager",
     "Operation",
     "OperationState",
     "ShuttleSnapshot",
