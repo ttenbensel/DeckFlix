@@ -12,27 +12,19 @@ from deckflix_app.operation import (
     prepare_operation,
     save_operation_manager,
 )
-from deckflix_app.dashboard import show_dashboard
 from deckflix_app.health import library_report, quality_score, size_gb
 from deckflix_app.home_screen import show_home_screen
-from deckflix_app.import_queue import build_import_queue
 from deckflix_app.importer import print_certificate
-from deckflix_app.queue_screen import show_queue
-from deckflix_app.scanner import scan_videos
-from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 from deckflix_app.screens import (
     show_operating_modes,
     show_system_verification,
     TerminalImportMonitor,
-    show_managed_approval_plan,
     show_managed_decision_queue,
     show_operation_dashboard,
     show_import_preflight,
     show_operation_history,
     show_parser_diagnostics,
-    show_receive_shuttle,
 )
-from deckflix_app.import_runner import run_import
 from deckflix_app.version import APP_NAME, VERSION, CODENAME
 from deckflix_app.system_verification import run_system_verification
 from deckflix_app.library_health import show_library_health
@@ -443,92 +435,6 @@ def execute_current_operation():
         )
         print_certificate(certificate)
 
-def build_current_queue():
-    shuttle = shuttle_scan(SHUTTLE)
-    library_movies = scan_videos(MOVIES)
-    comparison = compare_to_library(shuttle["media"], library_movies)
-    return build_import_queue(comparison, library_movies)
-
-
-def receive_shuttle():
-    show_receive_shuttle(
-        shuttle_path=SHUTTLE,
-        movie_library_path=MOVIES,
-    )
-
-
-def import_queue():
-    queue = build_current_queue()
-    show_queue(queue)
-
-    while True:
-        print()
-        print("Queue Options")
-        print("─────────────")
-        print("1. Run approved imports")
-        print("2. Return to main menu")
-        print()
-
-        choice = input("Select option: ").strip()
-
-        if not choice:
-            continue
-
-        if choice == "1":
-            begin_operation()
-
-        elif choice == "2":
-            operation_dashboard()
-
-        elif choice == "3":
-            receive_shuttle()
-
-        elif choice == "4":
-            show_decision_queue(
-                shuttle_path=SHUTTLE,
-                movie_libraries=CONFIG.movie_libraries,
-                tv_libraries=CONFIG.tv_libraries,
-            )
-
-        elif choice == "5":
-            show_approval_plan(
-                shuttle_path=SHUTTLE,
-                movie_libraries=CONFIG.movie_libraries,
-                tv_libraries=CONFIG.tv_libraries,
-            )
-
-        elif choice == "6":
-            import_queue()
-
-        elif choice == "7":
-            library_health()
-
-        elif choice == "8":
-            duplicate_inspector()
-
-        elif choice == "9":
-            show_repair_queue()
-
-        elif choice == "10":
-            show_parser_diagnostics(SHUTTLE)
-
-        elif choice == "11":
-            ship_mode()
-
-        elif choice == "12":
-            show_dashboard(MOVIES, TV, SHUTTLE)
-
-        elif choice == "13":
-            clear_operation()
-
-        elif choice == "14":
-            print("Securing DeckFlix console.")
-            break
-
-        else:
-            print("Invalid option.")
-
-
 def library_health():
     show_library_health(
         MOVIES,
@@ -618,18 +524,6 @@ def repair_preview():
 
         else:
             print("Invalid option.")
-
-
-def ship_mode():
-    print()
-    print("Ship Mode")
-    print("─────────")
-    print("Current Mode      ⚓ Harbour")
-    print("Low Impact        Enabled")
-    print("Internet Tasks    Allowed")
-    print("Background Work   Normal")
-    print()
-    print("Sea Mode controls coming next.")
 
 
 def main():
