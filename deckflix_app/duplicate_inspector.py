@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from deckflix_app.library_manager import library_summary
-from deckflix_app.quality import quality_label
+from deckflix_app.quality.legacy import quality_label
 from deckflix_app.repair_engine import show_repair_preview
 from deckflix_app.repair_queue import add as add_to_queue
 from deckflix_app.repair_queue import count as queue_count

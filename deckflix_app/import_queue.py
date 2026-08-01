@@ -1,7 +1,7 @@
 from collections import Counter
 
 from deckflix_app.media import inspect_media
-from deckflix_app.quality import (
+from deckflix_app.quality.legacy import (
     best_existing_match,
     compare_quality,
 )

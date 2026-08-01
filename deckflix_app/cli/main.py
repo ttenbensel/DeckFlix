@@ -1,14 +1,25 @@
 import argparse
 
-from .analyse import analyse
+from deckflix_app.cli.analyse import analyse
 
 
-def main():
-    parser = argparse.ArgumentParser(prog="deckflix")
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="deckflix",
+        description="DeckFlix shipboard media management",
+    )
 
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    commands = parser.add_subparsers(
+        dest="command",
+        required=True,
+    )
 
-    analyse_parser = subparsers.add_parser(
+    commands.add_parser(
+        "home",
+        help="Open the DeckFlix interactive console",
+    )
+
+    analyse_parser = commands.add_parser(
         "analyse",
         help="Analyse a shuttle drive",
     )
@@ -25,11 +36,21 @@ def main():
         help="Shuttle path",
     )
 
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
+
+    if args.command == "home":
+        from deckflix_app.app import main as run_home
+
+        run_home()
+        return
 
     if args.command == "analyse":
         analyse(args.library, args.shuttle)
+        return
 
-
-if __name__ == "__main__":
-    main()
+    parser.error(f"Unknown command: {args.command}")

@@ -10,7 +10,7 @@ from deckflix_app.importer import (
     print_certificate,
     queue_from_legacy_plan,
 )
-from deckflix_app.importer import build_import_plan
+from deckflix_app.importer.legacy import build_import_plan
 
 
 TEMP_IMPORT_DIRECTORY = Path("/tmp/deckflix-import")

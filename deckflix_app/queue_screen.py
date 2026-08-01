@@ -1,5 +1,5 @@
 from deckflix_app.import_queue import queue_summary
-from deckflix_app.quality import quality_label
+from deckflix_app.quality.legacy import quality_label
 
 
 def media_name(media):

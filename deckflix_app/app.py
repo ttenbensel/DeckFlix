@@ -1,6 +1,7 @@
 from deckflix_app.config import load_config
 from deckflix_app.dashboard import show_dashboard
 from deckflix_app.health import library_report, quality_score, size_gb
+from deckflix_app.home_screen import show_home_screen
 from deckflix_app.import_queue import build_import_queue
 from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
@@ -21,13 +22,12 @@ QUARANTINE = CONFIG.paths.quarantine
 
 
 def logo():
-    print("═══════════════════════════════════════════════")
-    print(f"                 ⚓ {APP_NAME.upper()} ⚓")
-    print("        Shipboard Media Management")
-    print("═══════════════════════════════════════════════")
-    print(f"Version {VERSION}")
-    print(f"Codename: {CODENAME}")
-    print()
+    show_home_screen(
+        app_name=APP_NAME,
+        version=VERSION,
+        codename=CODENAME,
+        config=CONFIG,
+    )
 
 
 def build_current_queue():
