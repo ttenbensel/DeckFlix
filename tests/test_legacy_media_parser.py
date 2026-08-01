@@ -131,3 +131,42 @@ def test_numeric_episode_filename_uses_release_folder_title(
     assert media.title == "American Horror Story"
     assert media.season == 4
     assert media.episode == 1
+
+
+def test_release_folder_beats_cryptic_filename(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "1000 ways to die"
+        / "1000.Ways.To.Die.S05E07.HDTV.XviD-aAF"
+        / "aaf-1wtd.s05e07.avi"
+    )
+
+    file.parent.mkdir(parents=True)
+    file.touch()
+
+    media = inspect_media(file)
+
+    assert media.title == "1000 Ways To Die"
+    assert media.season == 5
+    assert media.episode == 7
+
+
+def test_leading_file_order_number_is_removed(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "1000 ways to die"
+        / "23_1000.ways.to.die.s05e22.hdtv.xvid.avi"
+    )
+
+    file.parent.mkdir(parents=True)
+    file.touch()
+
+    media = inspect_media(file)
+
+    assert media.title.lower() == "1000 ways to die"
+    assert media.season == 5
+    assert media.episode == 22

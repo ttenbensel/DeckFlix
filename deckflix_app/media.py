@@ -209,6 +209,14 @@ def _clean_tv_title_candidate(text):
         flags=re.IGNORECASE,
     )[0]
 
+    # Remove ordering prefixes such as:
+    # 23_1000.Ways.To.Die.S05E22
+    title = re.sub(
+        r"^\s*\d{1,3}[._-]+(?=[A-Za-z0-9])",
+        "",
+        title,
+    )
+
     title = re.sub(
         r"\b(?:complete[ ._-]*)?season[ ._-]*\d{1,2}\b.*$",
         " ",
@@ -240,14 +248,25 @@ def _tv_title_from_path(path):
         "shuttle",
     }
 
-    candidates = [path.stem]
-    candidates.extend(parent.name for parent in path.parents)
-
-    for raw_candidate in candidates:
-        if not _contains_episode_marker(raw_candidate):
+    # Release folders often contain a more complete title than the
+    # filename, for example:
+    #
+    # Parent: 1000.Ways.To.Die.S05E07.HDTV.XviD-aAF
+    # File:   aaf-1wtd.s05e07.avi
+    #
+    # Prefer the nearest parent containing an episode marker.
+    for parent in path.parents:
+        if not _contains_episode_marker(parent.name):
             continue
 
-        candidate = _clean_tv_title_candidate(raw_candidate)
+        candidate = _clean_tv_title_candidate(parent.name)
+
+        if candidate.lower() not in generic_names:
+            return candidate
+
+    # Otherwise use the title embedded in the filename.
+    if _contains_episode_marker(path.stem):
+        candidate = _clean_tv_title_candidate(path.stem)
 
         if candidate.lower() not in generic_names:
             return candidate

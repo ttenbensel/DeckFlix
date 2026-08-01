@@ -6,7 +6,10 @@ from deckflix_app.import_queue import build_import_queue
 from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
-from deckflix_app.screens import show_receive_shuttle
+from deckflix_app.screens import (
+    show_parser_diagnostics,
+    show_receive_shuttle,
+)
 from deckflix_app.import_runner import run_import
 from deckflix_app.version import APP_NAME, VERSION, CODENAME
 from deckflix_app.library_health import show_library_health
@@ -195,7 +198,8 @@ def main():
         print("5. Duplicate Inspector")
         print("6. Repair Queue")
         print("7. Ship Mode")
-        print("8. Exit")
+        print("8. Parser Diagnostics")
+        print("9. Exit")
         print()
 
         choice = input("Select option: ").strip()
@@ -225,6 +229,9 @@ def main():
             ship_mode()
 
         elif choice == "8":
+            show_parser_diagnostics(SHUTTLE)
+
+        elif choice == "9":
             print("Securing DeckFlix console.")
             break
 
