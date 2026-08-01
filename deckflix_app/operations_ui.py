@@ -78,7 +78,7 @@ def begin_operation():
     print("Nothing has been imported or changed.")
 
 
-def operation_dashboard():
+def operation_dashboard(operation_manager):
     show_operation_dashboard(operation_manager)
 
 

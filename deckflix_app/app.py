@@ -109,7 +109,9 @@ def main():
             begin_operation()
 
         elif choice == "2":
-            operation_dashboard()
+            operation_dashboard(
+                OPERATION_MANAGER
+            )
 
         elif choice == "3":
             show_managed_decision_queue(
