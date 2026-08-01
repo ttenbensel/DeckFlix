@@ -9,10 +9,6 @@ def path_status(path: Path) -> str:
     return "ONLINE" if path.exists() else "OFFLINE"
 
 
-def mode_name(read_only: bool) -> str:
-    return "SAFE MODE" if read_only else "IMPORT MODE"
-
-
 def recommended_action(
     manager: OperationManager | None,
     *,

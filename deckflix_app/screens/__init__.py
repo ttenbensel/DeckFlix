@@ -1,3 +1,4 @@
+from .operating_modes import show_operating_modes
 from .system_verification import show_system_verification
 from .import_preflight import show_import_preflight
 from .operation_history import show_operation_history
@@ -15,6 +16,7 @@ from .parser_diagnostics import show_parser_diagnostics
 from .shuttle import show_receive_shuttle
 
 __all__ = [
+    "show_operating_modes",
     "show_system_verification",
     "show_import_preflight",
     "show_operation_history",

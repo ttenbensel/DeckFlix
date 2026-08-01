@@ -3,7 +3,6 @@ from types import SimpleNamespace
 
 from deckflix_app.decision import ApprovalStatus
 from deckflix_app.home_screen import (
-    mode_name,
     path_status,
     recommended_action,
     show_home_screen,
@@ -89,11 +88,6 @@ def test_path_status(tmp_path: Path):
     path.mkdir()
 
     assert path_status(path) == "ONLINE"
-
-
-def test_mode_name():
-    assert mode_name(True) == "SAFE MODE"
-    assert mode_name(False) == "IMPORT MODE"
 
 
 def test_no_operation_recommends_begin():
