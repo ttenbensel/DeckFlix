@@ -1,15 +1,24 @@
+from pathlib import Path
 from deckflix_app.config import load_config
-from deckflix_app.operation import InvalidOperationTransition, OperationManager, prepare_operation
+from deckflix_app.decision import ApprovalStatus
+from deckflix_app.operation import (
+    InvalidOperationTransition,
+    OperationManager,
+    approve_ready_items,
+    execute_operation,
+    prepare_operation,
+)
 from deckflix_app.dashboard import show_dashboard
 from deckflix_app.health import library_report, quality_score, size_gb
 from deckflix_app.home_screen import show_home_screen
 from deckflix_app.import_queue import build_import_queue
+from deckflix_app.importer import print_certificate
 from deckflix_app.queue_screen import show_queue
 from deckflix_app.scanner import scan_videos
 from deckflix_app.shuttle import scan_shuttle as shuttle_scan, compare_to_library
 from deckflix_app.screens import (
-    show_approval_plan,
-    show_decision_queue,
+    show_managed_approval_plan,
+    show_managed_decision_queue,
     show_operation_dashboard,
     show_parser_diagnostics,
     show_receive_shuttle,
@@ -127,6 +136,99 @@ def clear_operation():
 
     OPERATION_MANAGER.clear()
     print("Operation cleared.")
+
+
+def approve_operation():
+    print()
+    print("Approve Ready Imports")
+    print("═════════════════════")
+
+    if not OPERATION_MANAGER.active:
+        print()
+        print("No operation is active.")
+        return
+
+    plan = OPERATION_MANAGER.approval_plan
+
+    if plan is None:
+        print()
+        print("No approval plan is available.")
+        return
+
+    ready = plan.count(ApprovalStatus.READY)
+
+    print()
+    print(f"Operation          {OPERATION_MANAGER.operation.id}")
+    print(f"Ready imports      {ready}")
+    print(f"Needs review       {plan.count(ApprovalStatus.REVIEW)}")
+    print(f"Skipped            {plan.count(ApprovalStatus.SKIPPED)}")
+    print()
+    print("Only NEW media marked READY will be approved.")
+    print("Upgrades and review items will not be approved.")
+
+    answer = input(
+        "Approve all READY imports? (y/N): "
+    ).strip().lower()
+
+    if answer != "y":
+        print("Approval cancelled.")
+        return
+
+    try:
+        approved = approve_ready_items(OPERATION_MANAGER)
+    except InvalidOperationTransition as exc:
+        print()
+        print(f"Approval failed: {exc}")
+        return
+
+    print()
+    print(f"Approved {approved} import(s).")
+    print("No files have been copied.")
+
+
+def execute_current_operation():
+    print()
+    print("Execute Operation")
+    print("═════════════════")
+
+    if not OPERATION_MANAGER.active:
+        print()
+        print("No operation is active.")
+        return
+
+    if CONFIG.read_only:
+        print()
+        print("IMPORT BLOCKED")
+        print("──────────────")
+        print("DeckFlix is currently in SAFE MODE.")
+        print("Configuration setting: read_only = true")
+        print()
+        print("No files have been copied, moved, or deleted.")
+        return
+
+    answer = input(
+        "Execute all approved imports? (y/N): "
+    ).strip().lower()
+
+    if answer != "y":
+        print("Import cancelled.")
+        return
+
+    try:
+        certificate = execute_operation(
+            OPERATION_MANAGER,
+            movie_library=MOVIES,
+            tv_library=TV,
+            temp_dir=Path("/tmp/deckflix-import"),
+            read_only=CONFIG.read_only,
+        )
+    except Exception as exc:
+        print()
+        print(f"Import failed: {exc}")
+        return
+
+    if certificate is not None:
+        print_certificate(certificate)
 
 def build_current_queue():
     shuttle = shuttle_scan(SHUTTLE)
@@ -326,15 +428,16 @@ def main():
         print("3. Receive Shuttle Preview")
         print("4. Decision Queue")
         print("5. Decision Approval")
-        print("6. Import Queue (Legacy)")
-        print("7. Library Health")
-        print("8. Duplicate Inspector")
-        print("9. Repair Queue")
-        print("10. Parser Diagnostics")
-        print("11. Ship Mode")
-        print("12. Bridge Dashboard")
-        print("13. Clear Current Operation")
-        print("14. Exit")
+        print("6. Approve Ready Imports")
+        print("7. Execute Operation")
+        print("8. Parser Diagnostics")
+        print("9. Library Health")
+        print("10. Duplicate Inspector")
+        print("11. Repair Queue")
+        print("12. Ship Mode")
+        print("13. Bridge Dashboard")
+        print("14. Clear Current Operation")
+        print("15. Exit")
         print()
 
         choice = input("Select option: ").strip()
@@ -352,44 +455,43 @@ def main():
             receive_shuttle()
 
         elif choice == "4":
-            show_decision_queue(
-                shuttle_path=SHUTTLE,
-                movie_libraries=CONFIG.movie_libraries,
-                tv_libraries=CONFIG.tv_libraries,
+            show_managed_decision_queue(
+                OPERATION_MANAGER
             )
 
         elif choice == "5":
-            show_approval_plan(
-                shuttle_path=SHUTTLE,
-                movie_libraries=CONFIG.movie_libraries,
-                tv_libraries=CONFIG.tv_libraries,
+            show_managed_approval_plan(
+                OPERATION_MANAGER
             )
 
         elif choice == "6":
-            import_queue()
+            approve_operation()
 
         elif choice == "7":
-            library_health()
+            execute_current_operation()
 
         elif choice == "8":
-            duplicate_inspector()
-
-        elif choice == "9":
-            show_repair_queue()
-
-        elif choice == "10":
             show_parser_diagnostics(SHUTTLE)
 
+        elif choice == "9":
+            library_health()
+
+        elif choice == "10":
+            duplicate_inspector()
+
         elif choice == "11":
-            ship_mode()
+            show_repair_queue()
 
         elif choice == "12":
-            show_dashboard(MOVIES, TV, SHUTTLE)
+            ship_mode()
 
         elif choice == "13":
-            clear_operation()
+            show_dashboard(MOVIES, TV, SHUTTLE)
 
         elif choice == "14":
+            clear_operation()
+
+        elif choice == "15":
             print("Securing DeckFlix console.")
             break
 

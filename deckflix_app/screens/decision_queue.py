@@ -108,3 +108,50 @@ def show_decision_queue(
 
     print()
     print("Nothing has been changed.")
+
+
+def show_managed_decision_queue(manager) -> None:
+    print()
+    print("Decision Queue")
+    print("══════════════")
+
+    if not manager.active:
+        print()
+        print("No operation is active.")
+        print("Begin a shuttle operation first.")
+        return
+
+    if manager.decisions is None:
+        print()
+        print("The active operation has no decisions.")
+        return
+
+    queue = manager.decisions
+    summary = queue.summary()
+
+    print()
+    print(f"Operation           {manager.operation.id}")
+    print(f"Files analysed      {queue.total}")
+    print(f"Import new          {summary[Action.NEW]}")
+    print(f"Quality upgrades    {summary[Action.UPGRADE]}")
+    print(f"Equivalent copies   {summary[Action.DUPLICATE]}")
+    print(f"Keep existing       {summary[Action.DOWNGRADE]}")
+    print(f"Needs review        {summary[Action.REVIEW]}")
+    print()
+
+    for index, item in enumerate(queue.items[:40], start=1):
+        decision = item.decision
+
+        print(
+            f"{index:2}. "
+            f"[{ACTION_LABELS[decision.action]}] "
+            f"{media_name(item)}"
+        )
+        print(f"    Reason: {decision.reason}")
+        print()
+
+    if queue.total > 40:
+        print(f"...and {queue.total - 40} more decisions.")
+
+    print()
+    print("Nothing has been changed.")

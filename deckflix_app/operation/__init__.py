@@ -1,3 +1,9 @@
+from .execution import (
+    approve_ready_items,
+    build_operation_import_queue,
+    destination_for_media,
+    execute_operation,
+)
 from .workflow import prepare_operation
 from .manager import (
     InvalidOperationTransition,
@@ -18,6 +24,10 @@ from .snapshot import (
 )
 
 __all__ = [
+    "approve_ready_items",
+    "build_operation_import_queue",
+    "destination_for_media",
+    "execute_operation",
     "prepare_operation",
     "InvalidOperationTransition",
     "OperationInvalidated",

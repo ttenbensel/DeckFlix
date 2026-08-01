@@ -119,3 +119,61 @@ def show_approval_plan(
     print("READY means proposed only.")
     print("No operator approval has been saved.")
     print("Nothing has been changed.")
+
+
+def show_managed_approval_plan(manager) -> None:
+    print()
+    print("Decision Approval")
+    print("═════════════════")
+
+    if not manager.active:
+        print()
+        print("No operation is active.")
+        print("Begin a shuttle operation first.")
+        return
+
+    if manager.approval_plan is None:
+        print()
+        print("The active operation has no approval plan.")
+        return
+
+    plan = manager.approval_plan
+
+    print()
+    print(f"Operation           {manager.operation.id}")
+    print(f"Total decisions     {plan.total}")
+    print(
+        f"Ready to approve    "
+        f"{plan.count(ApprovalStatus.READY)}"
+    )
+    print(
+        f"Operator approved   "
+        f"{plan.count(ApprovalStatus.APPROVED)}"
+    )
+    print(
+        f"Skipped             "
+        f"{plan.count(ApprovalStatus.SKIPPED)}"
+    )
+    print(
+        f"Needs review        "
+        f"{plan.count(ApprovalStatus.REVIEW)}"
+    )
+    print()
+
+    for index, item in enumerate(plan.items[:40], start=1):
+        decision = item.queue_item.decision
+
+        print(
+            f"{index:2}. "
+            f"[{item.status.value}] "
+            f"[{ACTION_LABELS[decision.action]}] "
+            f"{media_name(item)}"
+        )
+        print(f"    Reason: {decision.reason}")
+        print()
+
+    if plan.total > 40:
+        print(f"...and {plan.total - 40} more items.")
+
+    print()
+    print("Nothing has been changed.")
