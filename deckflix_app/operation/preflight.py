@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+import json
 import shutil
 import tempfile
 
@@ -95,6 +96,28 @@ def _directory_is_writable(path: Path) -> bool:
         return False
 
 
+def _completed_destinations(
+    journal_path: Path | None,
+) -> set[Path]:
+    if journal_path is None or not journal_path.exists():
+        return set()
+
+    try:
+        with journal_path.open() as f:
+            data = json.load(f)
+
+    except (OSError, json.JSONDecodeError):
+        return set()
+
+    return {
+        Path(entry["destination"])
+        for entry in data.get("entries", {}).values()
+        if entry.get("status") == "COMPLETED"
+        and entry.get("destination")
+    }
+
+
+
 def _source_matches_snapshot(
     source: Path,
     *,
@@ -129,6 +152,7 @@ def run_import_preflight(
     movie_library: Path,
     tv_library: Path,
     temp_dir: Path,
+    journal_path: Path | None = None,
 ) -> ImportPreflightResult:
     operation = manager.require_operation()
 
@@ -138,6 +162,10 @@ def run_import_preflight(
         )
 
     result = ImportPreflightResult()
+
+    completed_destinations = _completed_destinations(
+        journal_path
+    )
 
     result.snapshot_valid = (
         manager.validate_snapshot()
@@ -262,7 +290,10 @@ def run_import_preflight(
         else:
             result.movie_bytes += source_size
 
-        if destination.exists():
+        if (
+            destination.exists()
+            and destination not in completed_destinations
+        ):
             result.conflicts.append(
                 PreflightConflict(
                     source=source,

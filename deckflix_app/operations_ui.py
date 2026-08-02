@@ -187,6 +187,10 @@ def full_import_preflight(
             movie_library=movies,
             tv_library=tv,
             temp_dir=config.import_staging_directory,
+            journal_path=(
+                config.report_directory
+                / "current-import-journal.json"
+            ),
         )
     except Exception as exc:
         print()
