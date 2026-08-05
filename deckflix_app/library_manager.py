@@ -3,6 +3,7 @@ from collections import Counter, defaultdict
 from deckflix_app.scanner import scan_media
 from deckflix_app.library.index import media_key
 
+
 def scan_library(movies_path, tv_path):
     movie_folder_items = scan_media(movies_path)
     tv_folder_items = scan_media(tv_path)
@@ -13,18 +14,21 @@ def scan_library(movies_path, tv_path):
         if item.media_type == "movie"
     ]
 
-    tv_items = [
+    misplaced_tv_items = [
         item
         for item in movie_folder_items
         if item.media_type == "tv"
     ]
 
+    tv_items = list(misplaced_tv_items)
     tv_items.extend(tv_folder_items)
 
     return {
         "movie_items": movie_items,
         "tv_items": tv_items,
+        "misplaced_tv_items": misplaced_tv_items,
     }
+
 
 def count_by_quality(media_items):
     counts = Counter()
@@ -63,17 +67,33 @@ def find_missing_year_movies(media_items):
     return [
         item
         for item in media_items
-        if item.media_type == "movie" and item.year is None
+        if item.media_type == "movie"
+        and item.year is None
     ]
 
 
+def find_misplaced_tv(scan):
+    return scan["misplaced_tv_items"]
+
+
 def library_summary(movies_path, tv_path):
-    scan = scan_library(movies_path, tv_path)
+    scan = scan_library(
+        movies_path,
+        tv_path,
+    )
 
-    all_items = scan["movie_items"] + scan["tv_items"]
+    all_items = (
+        scan["movie_items"]
+        + scan["tv_items"]
+    )
 
-    movie_duplicates = find_duplicate_keys(scan["movie_items"])
-    tv_duplicates = find_duplicate_keys(scan["tv_items"])
+    movie_duplicates = find_duplicate_keys(
+        scan["movie_items"]
+    )
+
+    tv_duplicates = find_duplicate_keys(
+        scan["tv_items"]
+    )
 
     return {
         "movies_total": len(scan["movie_items"]),
@@ -82,8 +102,12 @@ def library_summary(movies_path, tv_path):
         "tv_duplicates": tv_duplicates,
         "quality_counts": count_by_quality(all_items),
         "unknown_quality": find_unknown_quality(all_items),
-        "missing_year_movies": find_missing_year_movies(scan["movie_items"]),
+        "missing_year_movies": find_missing_year_movies(
+            scan["movie_items"]
+        ),
+        "misplaced_tv": find_misplaced_tv(scan),
     }
+
 
 def calculate_health_score(summary):
     """
@@ -95,17 +119,39 @@ def calculate_health_score(summary):
 
     score = 100
 
-    movie_duplicate_penalty = min(len(summary["movie_duplicates"]) // 5, 12)
-    tv_duplicate_penalty = min(len(summary["tv_duplicates"]) // 3, 8)
-    missing_year_penalty = min(len(summary["missing_year_movies"]) // 3, 8)
-    unknown_quality_penalty = min(len(summary["unknown_quality"]) // 25, 15)
+    movie_duplicate_penalty = min(
+        len(summary["movie_duplicates"]) // 5,
+        12,
+    )
+
+    tv_duplicate_penalty = min(
+        len(summary["tv_duplicates"]) // 3,
+        8,
+    )
+
+    missing_year_penalty = min(
+        len(summary["missing_year_movies"]) // 3,
+        8,
+    )
+
+    unknown_quality_penalty = min(
+        len(summary["unknown_quality"]) // 25,
+        15,
+    )
+
+    misplaced_tv_penalty = min(
+        len(summary["misplaced_tv"]) // 50,
+        10,
+    )
 
     score -= movie_duplicate_penalty
     score -= tv_duplicate_penalty
     score -= missing_year_penalty
     score -= unknown_quality_penalty
+    score -= misplaced_tv_penalty
 
     return max(score, 0)
+
 
 def duplicate_examples(duplicates, limit=10):
     """

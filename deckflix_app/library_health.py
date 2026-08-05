@@ -28,11 +28,41 @@ def show_library_health(movies_path, tv_path):
         print("Example Duplicate Titles")
         print("────────────────────────")
 
-        for title in duplicate_examples(summary["movie_duplicates"]):
+        for title in duplicate_examples(
+            summary["movie_duplicates"]
+        ):
             print(f"• {title}")
 
     print()
     print(f"Missing Years         : {len(summary['missing_year_movies'])}")
+    print()
+
+    misplaced = summary["misplaced_tv"]
+
+    episodes = [
+        item
+        for item in misplaced
+        if item.content_type == "episode"
+    ]
+
+    extras = [
+        item
+        for item in misplaced
+        if item.content_type == "extra"
+    ]
+
+    specials = [
+        item
+        for item in misplaced
+        if item.content_type == "special"
+    ]
+
+    print("Misplaced TV Content")
+    print("────────────────────")
+    print(f"TV Episodes in Movies : {len(episodes)}")
+    print(f"TV Extras in Movies   : {len(extras)}")
+    print(f"TV Specials in Movies : {len(specials)}")
+    print(f"Total Misplaced       : {len(misplaced)}")
     print()
 
     print("TV")
@@ -59,7 +89,10 @@ def show_library_health(movies_path, tv_path):
         print(f"{quality:<18}: {count}")
 
     print()
-    print(f"Unknown Quality Files : {len(summary['unknown_quality'])}")
+    print(
+        f"Unknown Quality Files : "
+        f"{len(summary['unknown_quality'])}"
+    )
 
     print()
     print("Overall Health")
