@@ -16,23 +16,27 @@ def _clean_title(title: str) -> str:
     return " ".join(title.split()).strip()
 
 
-def parse_filename(filename: str) -> MediaMetadata:
+def parse_filename(
+    filename: str,
+    context: str | None = None,
+) -> MediaMetadata:
     path = Path(filename)
 
     stem = path.stem
     container = path.suffix.lstrip(".").lower()
+    search_text = f"{stem} {context or ''}"
 
     resolution = None
     source = None
     codec = None
 
-    if match := RESOLUTION_PATTERN.search(stem):
+    if match := RESOLUTION_PATTERN.search(search_text):
         resolution = match.group(1)
 
-    if match := SOURCE_PATTERN.search(stem):
+    if match := SOURCE_PATTERN.search(search_text):
         source = match.group(1)
 
-    if match := CODEC_PATTERN.search(stem):
+    if match := CODEC_PATTERN.search(search_text):
         codec = match.group(1)
 
     tv_match = TV_PATTERN.search(stem)

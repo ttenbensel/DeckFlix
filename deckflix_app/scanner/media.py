@@ -9,7 +9,16 @@ def scan_media(root: str | Path):
     media = []
 
     for file in scan_directory(root):
-        item = parse_filename(file.name)
+        context = " ".join(
+            part.name
+            for part in file.parents
+            if part.name
+        )
+
+        item = parse_filename(
+            file.name,
+            context=context,
+        )
 
         item.path = file
         item.size = file.stat().st_size
