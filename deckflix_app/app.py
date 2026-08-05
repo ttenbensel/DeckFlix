@@ -82,114 +82,179 @@ def main():
     while True:
         logo()
 
-        print("1. Begin Shuttle Operation")
-        print("2. Operation Dashboard")
-        print("3. Review Decisions")
-        print("4. Approve Ready Imports")
-        print("5. Full Import Preflight")
-        print("6. Enable Import Mode")
-        print("7. Execute Operation")
-        print("8. Operation History")
-        print("9. Library Health")
-        print("10. Duplicate Inspector")
-        print("11. Repair Queue")
-        print("12. Parser Diagnostics")
-        print("13. System Verification")
-        print("14. Operating Mode")
-        print("15. Clear Current Operation")
-        print("16. Exit")
+        print("1. Shuttle Operation")
+        print("2. Library Health")
+        print("3. Review & Approve Repairs")
+        print("4. Import Media")
+        print("5. Operation History")
+        print("6. System Status")
+        print("7. Exit")
         print()
 
         choice = input("Select option: ").strip()
 
-        if not choice:
-            continue
-
         if choice == "1":
-            begin_operation()
+            while True:
+                print()
+                print("Shuttle Operation")
+                print("─────────────────")
+                print("1. Begin Shuttle Operation")
+                print("2. Operation Dashboard")
+                print("3. Clear Current Operation")
+                print("4. Back")
+                print()
+
+                sub = input("Select option: ").strip()
+
+                if sub == "1":
+                    begin_operation()
+
+                elif sub == "2":
+                    operation_dashboard(
+                        OPERATION_MANAGER
+                    )
+
+                elif sub == "3":
+                    clear_operation()
+
+                elif sub == "4":
+                    break
+
+                else:
+                    print("Invalid option.")
 
         elif choice == "2":
-            operation_dashboard(
-                OPERATION_MANAGER
-            )
-
-        elif choice == "3":
-            show_managed_decision_queue(
-                OPERATION_MANAGER
-            )
-
-        elif choice == "4":
-            approve_operation()
-
-        elif choice == "5":
-            full_import_preflight(
-                operation_manager=OPERATION_MANAGER,
-                movies=MOVIES,
-                tv=TV,
-                config=CONFIG,
-            )
-
-        elif choice == "6":
-            enable_import_mode(
-                operation_manager=OPERATION_MANAGER,
-                operation_state_path=OPERATION_STATE_PATH,
-            )
-
-        elif choice == "7":
-            execute_current_operation(
-                operation_manager=OPERATION_MANAGER,
-                movies=MOVIES,
-                tv=TV,
-                config=CONFIG,
-                operation_state_path=OPERATION_STATE_PATH,
-            )
-
-        elif choice == "8":
-            show_operation_history(
-                CONFIG.report_directory
-                / "operations"
-            )
-
-        elif choice == "9":
             library_health(
                 MOVIES,
                 TV,
             )
 
-        elif choice == "10":
-            duplicate_inspector(
-                MOVIES,
-                TV,
-            )
-
-        elif choice == "11":
-            show_repair_queue()
-
-        elif choice == "12":
-            show_parser_diagnostics(
-                SHUTTLE
-            )
-
-        elif choice == "13":
-            system_verification(
-                config=CONFIG,
-                operation_manager=OPERATION_MANAGER,
-            )
-
-        elif choice == "14":
-            changed = show_operating_modes(CONFIG)
-
-            if changed:
+        elif choice == "3":
+            while True:
                 print()
-                print(
-                    "Exit and relaunch DeckFlix before "
-                    "starting or continuing an operation."
-                )
+                print("Review & Approve Repairs")
+                print("───────────────────────")
+                print("1. Review Decisions")
+                print("2. Duplicate Inspector")
+                print("3. Repair Queue")
+                print("4. Back")
+                print()
 
-        elif choice == "15":
-            clear_operation()
+                sub = input("Select option: ").strip()
 
-        elif choice == "16":
+                if sub == "1":
+                    show_managed_decision_queue(
+                        OPERATION_MANAGER
+                    )
+
+                elif sub == "2":
+                    duplicate_inspector(
+                        MOVIES,
+                        TV,
+                    )
+
+                elif sub == "3":
+                    show_repair_queue()
+
+                elif sub == "4":
+                    break
+
+                else:
+                    print("Invalid option.")
+
+        elif choice == "4":
+            while True:
+                print()
+                print("Import Media")
+                print("────────────")
+                print("1. Approve Ready Imports")
+                print("2. Full Import Preflight")
+                print("3. Enable Import Mode")
+                print("4. Execute Operation")
+                print("5. Back")
+                print()
+
+                sub = input("Select option: ").strip()
+
+                if sub == "1":
+                    approve_operation()
+
+                elif sub == "2":
+                    full_import_preflight(
+                        operation_manager=OPERATION_MANAGER,
+                        movies=MOVIES,
+                        tv=TV,
+                        config=CONFIG,
+                    )
+
+                elif sub == "3":
+                    enable_import_mode(
+                        operation_manager=OPERATION_MANAGER,
+                        operation_state_path=OPERATION_STATE_PATH,
+                    )
+
+                elif sub == "4":
+                    execute_current_operation(
+                        operation_manager=OPERATION_MANAGER,
+                        movies=MOVIES,
+                        tv=TV,
+                        config=CONFIG,
+                        operation_state_path=OPERATION_STATE_PATH,
+                    )
+
+                elif sub == "5":
+                    break
+
+                else:
+                    print("Invalid option.")
+
+        elif choice == "5":
+            show_operation_history(
+                CONFIG.report_directory
+                / "operations"
+            )
+
+        elif choice == "6":
+            while True:
+                print()
+                print("System Status")
+                print("─────────────")
+                print("1. Parser Diagnostics")
+                print("2. System Verification")
+                print("3. Operating Mode")
+                print("4. Back")
+                print()
+
+                sub = input("Select option: ").strip()
+
+                if sub == "1":
+                    show_parser_diagnostics(
+                        SHUTTLE
+                    )
+
+                elif sub == "2":
+                    system_verification(
+                        config=CONFIG,
+                        operation_manager=OPERATION_MANAGER,
+                    )
+
+                elif sub == "3":
+                    changed = show_operating_modes(CONFIG)
+
+                    if changed:
+                        print()
+                        print(
+                            "Exit and relaunch DeckFlix before "
+                            "starting or continuing an operation."
+                        )
+
+                elif sub == "4":
+                    break
+
+                else:
+                    print("Invalid option.")
+
+        elif choice == "7":
             print("Securing DeckFlix console.")
             break
 
@@ -199,5 +264,3 @@ def main():
         input(
             "\nPress Enter to return to menu..."
         )
-
-
