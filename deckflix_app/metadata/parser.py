@@ -38,8 +38,19 @@ def parse_filename(filename: str) -> MediaMetadata:
     tv_match = TV_PATTERN.search(stem)
 
     if tv_match:
-        season = int(tv_match.group(1))
-        episode = int(tv_match.group(2))
+        groups = tv_match.groupdict()
+
+        season = int(
+            groups["s1"]
+            or groups["s2"]
+            or groups["s3"]
+        )
+
+        episode = int(
+            groups["e1"]
+            or groups["e2"]
+            or groups["e3"]
+        )
 
         title = _clean_title(stem[:tv_match.start()])
 
@@ -57,9 +68,26 @@ def parse_filename(filename: str) -> MediaMetadata:
     year = None
     title = stem
 
-    if match := YEAR_PATTERN.search(stem):
-        year = int(match.group(1))
-        title = stem[:match.start()].rstrip(" ([{-_.")
+    years = YEAR_PATTERN.findall(stem)
+
+    if years:
+        matches = list(YEAR_PATTERN.finditer(stem))
+
+        first_year = matches[0]
+
+        # Handle numeric movie titles:
+        # Example:
+        # 1917.2019.1080p.BluRay.mkv
+        if (
+            first_year.start() == 0
+            and len(matches) > 1
+        ):
+            title = stem[:first_year.end()]
+            year = int(matches[1].group(1))
+
+        else:
+            year = int(first_year.group(1))
+            title = stem[:first_year.start()].rstrip(" ([{-_.")
 
     title = _clean_title(title)
 

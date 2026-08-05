@@ -1,34 +1,35 @@
 from pathlib import Path
 
 from deckflix_app.library_manager import library_summary
-from deckflix_app.quality.legacy import quality_label
 from deckflix_app.repair_engine import show_repair_preview
 from deckflix_app.repair_queue import add as add_to_queue
 from deckflix_app.repair_queue import count as queue_count
+from deckflix_app.quality import quality_score
 
 
 def format_duplicate_name(key):
-    text = str(key)
-
     if isinstance(key, tuple):
-        title = key[0]
-        year = key[1]
 
-        title = format_title(title)
+        if key[0] == "movie":
+            title = key[1]
 
-        if year:
-            return f"{title} ({year})"
+            if len(key) > 2 and key[2]:
+                return f"{format_title(title)} ({key[2]})"
 
-        return title
+            return format_title(title)
 
-    parts = text.split()
+        if key[0] == "tv":
+            title = key[1]
 
-    if parts and parts[-1].isdigit() and len(parts[-1]) == 4:
-        year = parts[-1]
-        title = " ".join(parts[:-1])
-        return f"{format_title(title)} ({year})"
+            if len(key) > 3:
+                return (
+                    f"{format_title(title)} "
+                    f"S{key[2]:02d}E{key[3]:02d}"
+                )
 
-    return format_title(text)
+            return format_title(title)
+
+    return format_title(str(key))
 
 
 def format_title(title):
@@ -82,6 +83,7 @@ def star_rating(score):
         return "★★★☆☆"
     if score >= 40:
         return "★★☆☆☆"
+
     return "★☆☆☆☆"
 
 
@@ -96,8 +98,8 @@ def same_release(first, second):
     return (
         first.resolution == second.resolution
         and first.source == second.source
-        and first.codec == second.codec
-        and first.quality_score == second.quality_score
+        and first.video_codec == second.video_codec
+        and quality_score(first) == quality_score(second)
     )
 
 
@@ -114,13 +116,17 @@ def confidence_score(best, duplicates):
     for duplicate in duplicates:
         if same_filename(best, duplicate):
             score += 10
+
         if best.resolution == duplicate.resolution:
             score += 5
+
         if best.source == duplicate.source:
             score += 5
-        if best.codec == duplicate.codec:
+
+        if best.video_codec == duplicate.video_codec:
             score += 5
-        if best.quality_score == duplicate.quality_score:
+
+        if quality_score(best) == quality_score(duplicate):
             score += 5
 
     return min(score, 100)
@@ -133,7 +139,7 @@ def recommendation_for_item(item, best):
     if same_release(item, best):
         return "REVIEW DUPLICATE"
 
-    if item.quality_score >= best.quality_score - 10:
+    if quality_score(item) >= quality_score(best) - 10:
         return "OPTIONAL"
 
     return "REVIEW"
@@ -145,9 +151,9 @@ def show_confidence(percent):
     print(f"{confidence_bar(percent)} {percent}%")
     print()
 
-
 def show_group_recommendation(ranked):
     best = ranked[0]
+
     duplicates = [
         item
         for item in ranked[1:]
@@ -159,17 +165,28 @@ def show_group_recommendation(ranked):
     print()
 
     if duplicates:
-        saving = sum(size_gb(item.path) for item in duplicates)
-        confidence = confidence_score(best, duplicates)
+        saving = sum(
+            size_gb(item.path)
+            for item in duplicates
+        )
+
+        confidence = confidence_score(
+            best,
+            duplicates,
+        )
 
         print("⚠ REVIEW DUPLICATE")
         print()
+
         show_confidence(confidence)
 
         print("Reason")
         print("──────")
 
-        if any(same_filename(best, item) for item in duplicates):
+        if any(
+            same_filename(best, item)
+            for item in duplicates
+        ):
             print("✓ Same filename")
 
         print("✓ Same resolution")
@@ -191,29 +208,50 @@ def show_group_recommendation(ranked):
             print(f"📁 {folder_name(duplicate)}")
             print()
 
-        print(f"Potential Saving : {saving:.2f} GB")
+        print(
+            f"Potential Saving : "
+            f"{saving:.2f} GB"
+        )
+
         print()
         return
 
     removable = ranked[1:]
-    saving = sum(size_gb(item.path) for item in removable)
+
+    saving = sum(
+        size_gb(item.path)
+        for item in removable
+    )
 
     print("✓ KEEP BEST COPY")
     print()
+
     show_confidence(75)
+
     print("Reason")
     print("──────")
     print("Highest quality score found.")
     print()
-    print(f"Best Copy         : {quality_label(best)}")
-    print(f"Potential Saving : {saving:.2f} GB")
-    print()
 
+    print(
+        f"Best Copy         : "
+        f"{best.resolution or 'unknown'} "
+        f"{best.source or 'unknown'} "
+        f"{best.video_codec or 'unknown'} "
+        f"(Score {quality_score(best)})"
+    )
+
+    print(
+        f"Potential Saving : "
+        f"{saving:.2f} GB"
+    )
+
+    print()
 
 def show_duplicate_group(title, items):
     ranked = sorted(
         items,
-        key=lambda item: item.quality_score,
+        key=lambda item: quality_score(item),
         reverse=True,
     )
 
@@ -234,34 +272,70 @@ def show_duplicate_group(title, items):
 
         print(f"Copy {index}")
         print("──────")
-        print(f"Rating          : {star_rating(item.quality_score)}")
-        print(f"Quality         : {quality_label(item)}")
-        print(f"Score           : {item.quality_score}")
-        print(f"Size            : {size_gb(item.path):.2f} GB")
-        print(f"Recommendation  : {recommendation}")
-        print(f"File            : {item.path}")
+
+        print(
+            f"Rating          : "
+            f"{star_rating(quality_score(item))}"
+        )
+
+        print(
+            f"Quality         : "
+            f"{item.resolution or 'unknown'} "
+            f"{item.source or 'unknown'} "
+            f"{item.video_codec or 'unknown'}"
+        )
+
+        print(
+            f"Score           : "
+            f"{quality_score(item)}"
+        )
+
+        print(
+            f"Size            : "
+            f"{size_gb(item.path):.2f} GB"
+        )
+
+        print(
+            f"Recommendation  : "
+            f"{recommendation}"
+        )
+
+        print(
+            f"File            : "
+            f"{item.path}"
+        )
+
         print()
 
     print("Nothing has been changed.")
     print()
-    
+
     choice = input(
-        "[A] Add to Queue   [R] Repair Preview   [Enter] Back : "
+        "[A] Add to Queue   "
+        "[R] Repair Preview   "
+        "[Enter] Back : "
     ).strip().lower()
 
     if choice == "a":
-        add_to_queue(Path(ranked[1].path).parent)
+        add_to_queue(
+            Path(ranked[1].path).parent
+        )
 
         print()
         print("✓ Added to Repair Queue")
-        print(f"Items in Queue : {queue_count()}")
-        input("\nPress Enter to continue...")
+        print(
+            f"Items in Queue : "
+            f"{queue_count()}"
+        )
+
+        input(
+            "\nPress Enter to continue..."
+        )
 
     if choice == "r":
         show_repair_preview(
             Path(ranked[1].path).parent
         )
-
 
 def show_duplicate_inspector(movies_path, tv_path):
     summary = library_summary(
@@ -278,23 +352,41 @@ def show_duplicate_inspector(movies_path, tv_path):
 
     if not duplicates:
         print("No duplicate movie titles found.")
+        input("\nPress Enter to return...")
         return
 
-    keys = sorted(duplicates.keys())
+    keys = sorted(
+        duplicates.keys()
+    )
 
     while True:
-        print(f"Duplicate Groups Found : {len(keys)}")
+        print(
+            f"Duplicate Groups Found : "
+            f"{len(keys)}"
+        )
+
         print()
 
-        for index, key in enumerate(keys[:20], start=1):
-            print(f"{index:>2}. {format_duplicate_name(key)}")
+        for index, key in enumerate(
+            keys[:20],
+            start=1,
+        ):
+            print(
+                f"{index:>2}. "
+                f"{format_duplicate_name(key)}"
+            )
 
         print()
-        print("Select a duplicate group number to inspect.")
+        print(
+            "Select a duplicate group number "
+            "to inspect."
+        )
         print("Q. Back")
         print()
 
-        choice = input("Select option: ").strip().lower()
+        choice = input(
+            "Select option: "
+        ).strip().lower()
 
         if choice == "q":
             break
@@ -305,7 +397,10 @@ def show_duplicate_inspector(movies_path, tv_path):
 
         index = int(choice)
 
-        if index < 1 or index > min(len(keys), 20):
+        if index < 1 or index > min(
+            len(keys),
+            20,
+        ):
             print("Invalid option.")
             continue
 
@@ -316,5 +411,9 @@ def show_duplicate_inspector(movies_path, tv_path):
             duplicates[selected_key],
         )
 
-        input("\nPress Enter to return to duplicate list...")
-        print()
+        input(
+            "\nPress Enter to return "
+            "to duplicate list..."
+        )
+
+

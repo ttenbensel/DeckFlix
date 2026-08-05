@@ -151,10 +151,16 @@ def main():
             )
 
         elif choice == "9":
-            library_health()
+            library_health(
+                MOVIES,
+                TV,
+            )
 
         elif choice == "10":
-            duplicate_inspector()
+            duplicate_inspector(
+                MOVIES,
+                TV,
+            )
 
         elif choice == "11":
             show_repair_queue()
@@ -165,7 +171,10 @@ def main():
             )
 
         elif choice == "13":
-            system_verification()
+            system_verification(
+                config=CONFIG,
+                operation_manager=OPERATION_MANAGER,
+            )
 
         elif choice == "14":
             changed = show_operating_modes(CONFIG)

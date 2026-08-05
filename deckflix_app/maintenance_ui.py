@@ -194,5 +194,11 @@ def repair_preview(
             print("Invalid option.")
 
 
-def duplicate_inspector():
-    show_duplicate_inspector()
+def duplicate_inspector(
+    movies,
+    tv,
+):
+    show_duplicate_inspector(
+        movies,
+        tv,
+    )

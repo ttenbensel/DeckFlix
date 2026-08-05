@@ -1,31 +1,16 @@
 from collections import Counter, defaultdict
-from pathlib import Path
 
-from deckflix_app.media import inspect_media
-from deckflix_app.scanner import scan_videos
-
+from deckflix_app.scanner import scan_media
+from deckflix_app.library.index import media_key
 
 def scan_library(movies_path, tv_path):
-    movie_files = scan_videos(movies_path)
-    tv_files = scan_videos(tv_path)
-
-    movie_items = [
-        inspect_media(file)
-        for file in movie_files
-    ]
-
-    tv_items = [
-        inspect_media(file)
-        for file in tv_files
-    ]
+    movie_items = scan_media(movies_path)
+    tv_items = scan_media(tv_path)
 
     return {
-        "movie_files": movie_files,
-        "tv_files": tv_files,
         "movie_items": movie_items,
         "tv_items": tv_items,
     }
-
 
 def count_by_quality(media_items):
     counts = Counter()
@@ -43,7 +28,7 @@ def find_duplicate_keys(media_items):
     groups = defaultdict(list)
 
     for item in media_items:
-        groups[item.key].append(item)
+        groups[media_key(item)].append(item)
 
     return {
         key: items
@@ -112,18 +97,34 @@ def duplicate_examples(duplicates, limit=10):
     """
     Return readable duplicate titles.
 
-    Sort alphabetically and limit the output so the
-    Library Health screen stays tidy.
+    Supports the current media key format:
+    ("movie", title, year)
+    ("tv", title, season, episode)
     """
 
     examples = []
 
     for key in sorted(duplicates.keys()):
         if isinstance(key, tuple):
-            title = key[0]
 
-            if len(key) > 1 and key[1]:
-                title = f"{title} ({key[1]})"
+            if key[0] == "movie":
+                title = key[1]
+
+                if len(key) > 2 and key[2]:
+                    title = f"{title} ({key[2]})"
+
+            elif key[0] == "tv":
+                title = key[1]
+
+                if len(key) > 3:
+                    title = (
+                        f"{title} "
+                        f"S{key[2]:02d}E{key[3]:02d}"
+                    )
+
+            else:
+                title = str(key)
+
         else:
             title = str(key)
 
