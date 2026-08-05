@@ -10,6 +10,7 @@ from .patterns import (
     YEAR_PATTERN,
 )
 
+
 def _clean_title(title: str) -> str:
     title = title.replace(".", " ")
     title = title.replace("_", " ")
@@ -24,6 +25,7 @@ def parse_filename(
 
     stem = path.stem
     container = path.suffix.lstrip(".").lower()
+
     search_text = f"{stem} {context or ''}"
 
     resolution = None
@@ -69,6 +71,7 @@ def parse_filename(
         return MediaMetadata(
             media_type="tv",
             title=title,
+            content_type="episode",
             season=season,
             episode=episode,
             resolution=resolution,
@@ -81,12 +84,12 @@ def parse_filename(
         return MediaMetadata(
             media_type="tv",
             title=_clean_title(stem),
+            content_type="episode",
             resolution=resolution,
             source=source,
             video_codec=codec,
             container=container,
         )
-
 
     year = None
     title = stem
@@ -98,9 +101,6 @@ def parse_filename(
 
         first_year = matches[0]
 
-        # Handle numeric movie titles:
-        # Example:
-        # 1917.2019.1080p.BluRay.mkv
         if (
             first_year.start() == 0
             and len(matches) > 1
@@ -117,6 +117,7 @@ def parse_filename(
     return MediaMetadata(
         media_type="movie",
         title=title,
+        content_type="movie",
         year=year,
         resolution=resolution,
         source=source,

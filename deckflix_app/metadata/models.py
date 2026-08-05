@@ -7,6 +7,8 @@ class MediaMetadata:
     media_type: str
     title: str
 
+    content_type: str | None = None
+
     year: int | None = None
 
     season: int | None = None
