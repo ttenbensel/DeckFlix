@@ -3,13 +3,14 @@ from pathlib import Path
 from .models import MediaMetadata
 from .patterns import (
     CODEC_PATTERN,
+    EXTRA_PATTERN,
     RESOLUTION_PATTERN,
     SOURCE_PATTERN,
+    SPECIAL_PATTERN,
     TV_CONTEXT_PATTERN,
     TV_PATTERN,
     YEAR_PATTERN,
 )
-
 
 def _clean_title(title: str) -> str:
     title = title.replace(".", " ")
@@ -40,6 +41,28 @@ def parse_filename(
 
     if match := CODEC_PATTERN.search(search_text):
         codec = match.group(1)
+
+    if EXTRA_PATTERN.search(search_text):
+        return MediaMetadata(
+            media_type="tv",
+            title=_clean_title(stem),
+            content_type="extra",
+            resolution=resolution,
+            source=source,
+            video_codec=codec,
+            container=container,
+        )
+
+    if SPECIAL_PATTERN.search(search_text):
+        return MediaMetadata(
+            media_type="tv",
+            title=_clean_title(stem),
+            content_type="special",
+            resolution=resolution,
+            source=source,
+            video_codec=codec,
+            container=container,
+        )
 
     tv_match = TV_PATTERN.search(stem)
 
