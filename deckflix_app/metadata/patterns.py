@@ -4,15 +4,30 @@ import re
 TV_PATTERN = re.compile(
     r"""
     (?:
-        [Ss](?P<s1>\d{1,2})[Ee](?P<e1>\d{1,2})
+        [Ss](?P<s1>\d{1,2})[Ee](?P<e1>\d{1,3})
+
         |
-        [Ss]eries[ ._-]*(?P<s2>\d{1,2})[ ._-]*(?P<e2>\d{1,3})of\d+
+        [Ss](?P<s4>\d{1,2})[Xx](?P<e4>\d{1,3})
+
+        |
+        (?P<s5>\d{1,2})[Xx](?P<e5>\d{1,3})
+
+        |
+        \[(?P<s6>\d{1,2})[.](?P<e6>\d{1,3})\]
+
+        |
+        (?P<s7>\d{1,2})[Ee](?P<e7>\d{1,3})
+
         |
         [Ss]eason[ ._-]*(?P<s3>\d{1,2})[ ._-]*(?:[Ee]pisode[ ._-]*)?(?P<e3>\d{1,3})
+
+        |
+        [Ss]eries[ ._-]*(?P<s2>\d{1,2})[ ._-]*(?P<e2>\d{1,3})of\d+
     )
     """,
     re.IGNORECASE | re.VERBOSE,
 )
+
 
 TV_CONTEXT_PATTERN = re.compile(
     r"""
@@ -26,6 +41,7 @@ TV_CONTEXT_PATTERN = re.compile(
     """,
     re.IGNORECASE | re.VERBOSE,
 )
+
 
 YEAR_PATTERN = re.compile(
     r"(19\d{2}|20\d{2})"

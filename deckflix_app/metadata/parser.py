@@ -45,15 +45,23 @@ def parse_filename(
         groups = tv_match.groupdict()
 
         season = int(
-            groups["s1"]
-            or groups["s2"]
-            or groups["s3"]
+            groups.get("s1")
+            or groups.get("s2")
+            or groups.get("s3")
+            or groups.get("s4")
+            or groups.get("s5")
+            or groups.get("s6")
+            or groups.get("s7")
         )
 
         episode = int(
-            groups["e1"]
-            or groups["e2"]
-            or groups["e3"]
+            groups.get("e1")
+            or groups.get("e2")
+            or groups.get("e3")
+            or groups.get("e4")
+            or groups.get("e5")
+            or groups.get("e6")
+            or groups.get("e7")
         )
 
         title = _clean_title(stem[:tv_match.start()])
