@@ -1,16 +1,19 @@
 from pathlib import Path
+import re
 
 from .models import MediaMetadata
 from .patterns import (
     CODEC_PATTERN,
     EXTRA_PATTERN,
     RESOLUTION_PATTERN,
+    SCENE_EPISODE_PATTERN,
     SOURCE_PATTERN,
     SPECIAL_PATTERN,
     TV_CONTEXT_PATTERN,
     TV_PATTERN,
     YEAR_PATTERN,
 )
+
 
 def _clean_title(title: str) -> str:
     title = title.replace(".", " ")
@@ -104,6 +107,34 @@ def parse_filename(
         )
 
     if context and TV_CONTEXT_PATTERN.search(context):
+
+        season_match = re.search(
+            r"[Ss]eason[ ._-]*(\d+)",
+            context,
+            re.IGNORECASE,
+        )
+
+        scene_match = SCENE_EPISODE_PATTERN.search(stem)
+
+        if season_match and scene_match:
+            season = int(season_match.group(1))
+
+            code = scene_match.group("scene_episode")
+
+            episode = int(code[-2:])
+
+            return MediaMetadata(
+                media_type="tv",
+                title=_clean_title(stem[:scene_match.start()]),
+                content_type="episode",
+                season=season,
+                episode=episode,
+                resolution=resolution,
+                source=source,
+                video_codec=codec,
+                container=container,
+            )
+
         return MediaMetadata(
             media_type="tv",
             title=_clean_title(stem),

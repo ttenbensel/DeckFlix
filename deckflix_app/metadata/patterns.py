@@ -47,6 +47,16 @@ SPECIAL_PATTERN = re.compile(
 )
 
 
+SCENE_EPISODE_PATTERN = re.compile(
+    r"""
+    \.
+    (?P<scene_episode>\d{3})
+    \.
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
 TV_PATTERN = re.compile(
     r"""
     (?:
