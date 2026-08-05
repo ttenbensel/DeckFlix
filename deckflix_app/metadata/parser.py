@@ -5,10 +5,10 @@ from .patterns import (
     CODEC_PATTERN,
     RESOLUTION_PATTERN,
     SOURCE_PATTERN,
+    TV_CONTEXT_PATTERN,
     TV_PATTERN,
     YEAR_PATTERN,
 )
-
 
 def _clean_title(title: str) -> str:
     title = title.replace(".", " ")
@@ -68,6 +68,17 @@ def parse_filename(
             video_codec=codec,
             container=container,
         )
+
+    if context and TV_CONTEXT_PATTERN.search(context):
+        return MediaMetadata(
+            media_type="tv",
+            title=_clean_title(stem),
+            resolution=resolution,
+            source=source,
+            video_codec=codec,
+            container=container,
+        )
+
 
     year = None
     title = stem

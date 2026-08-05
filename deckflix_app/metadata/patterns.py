@@ -14,6 +14,18 @@ TV_PATTERN = re.compile(
     re.IGNORECASE | re.VERBOSE,
 )
 
+TV_CONTEXT_PATTERN = re.compile(
+    r"""
+    (
+        [Ss]eason[ ._-]*\d{1,2}
+        |
+        [Ss]eries[ ._-]*\d{1,2}
+        |
+        [Ss]\d{1,2}
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
 
 YEAR_PATTERN = re.compile(
     r"(19\d{2}|20\d{2})"

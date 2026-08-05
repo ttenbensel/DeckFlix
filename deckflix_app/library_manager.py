@@ -4,8 +4,22 @@ from deckflix_app.scanner import scan_media
 from deckflix_app.library.index import media_key
 
 def scan_library(movies_path, tv_path):
-    movie_items = scan_media(movies_path)
-    tv_items = scan_media(tv_path)
+    movie_folder_items = scan_media(movies_path)
+    tv_folder_items = scan_media(tv_path)
+
+    movie_items = [
+        item
+        for item in movie_folder_items
+        if item.media_type == "movie"
+    ]
+
+    tv_items = [
+        item
+        for item in movie_folder_items
+        if item.media_type == "tv"
+    ]
+
+    tv_items.extend(tv_folder_items)
 
     return {
         "movie_items": movie_items,
