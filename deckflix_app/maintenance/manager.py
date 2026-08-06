@@ -29,9 +29,11 @@ class MaintenanceManager:
             return []
 
         return sorted(
-            self.directory.glob(
+            path
+            for path in self.directory.glob(
                 "MT-*.json"
             )
+            if "-journal" not in path.name
         )
 
     def load(
