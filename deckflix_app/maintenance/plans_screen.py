@@ -5,7 +5,7 @@ from .plan import MaintenanceState
 from .preflight import run_preflight
 from .executor import execute_dry_run
 from .execution import execute_plan
-
+from .certificate import print_maintenance_certificate
 
 def show_maintenance_plans(
     directory: Path,
@@ -296,6 +296,10 @@ def show_plan_details(
             )
             print(
                 f"Failed   : {failed}"
+            )
+
+            print_maintenance_certificate(
+                journal
             )
 
             input(
