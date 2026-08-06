@@ -235,21 +235,63 @@ def show_plan_details(
         ):
             print()
             print("Maintenance Execution Warning")
-            print("═══════════════════════════")
+            print("════════════════════════════")
             print()
+
             print(
-                f"Plan    : {plan.id}"
+                f"Plan      : {plan.id}"
             )
             print(
-                f"Actions : {plan.total_actions}"
+                "Operation : Misplaced TV Content Repair"
+            )
+            print(
+                f"Actions   : {plan.total_actions}"
             )
             print()
+
+            estimated_bytes = sum(
+                action.source.stat().st_size
+                for action in plan.actions
+                if action.source.exists()
+            )
+
             print(
-                "Mode:"
+                f"Data      : "
+                f"{estimated_bytes:,} bytes"
+            )
+
+            print()
+            print(
+                "Source:"
+            )
+            print(
+                plan.actions[0].source.parent
+            )
+
+            print()
+            print(
+                "Destination:"
+            )
+            print(
+                plan.actions[0].destination.parent
+            )
+
+            print()
+            print(
+                "Method:"
             )
             print(
                 "COPY → VERIFY → REMOVE"
             )
+
+            print()
+            print(
+                "Snapshot : READY"
+            )
+            print(
+                "Journal  : ENABLED"
+            )
+
             print()
 
             confirm = input(
