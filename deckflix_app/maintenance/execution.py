@@ -7,6 +7,7 @@ from .journal import (
 )
 from .plan import MaintenancePlan
 from .verify import verify_integrity
+from .snapshot import MaintenanceSnapshot
 
 
 def prepare_execution(
@@ -37,6 +38,24 @@ def prepare_execution(
     return journal
 
 
+def create_plan_snapshot(
+    plan: MaintenancePlan,
+) -> MaintenanceSnapshot:
+    """
+    Capture the approved source files
+    before execution.
+    """
+
+    sources = [
+        action.source
+        for action in plan.actions
+    ]
+
+    return MaintenanceSnapshot.create(
+        sources,
+    )
+
+
 def execute_plan(
     plan: MaintenancePlan,
     journal_path: Path,
@@ -44,10 +63,23 @@ def execute_plan(
     """
     Resume-aware maintenance execution.
 
-    COPY
+    Safety flow:
+
+    SNAPSHOT
     VERIFY
+    COPY
+    VERIFY DESTINATION
     REMOVE SOURCE
     """
+
+    snapshot = create_plan_snapshot(
+        plan,
+    )
+
+    if not snapshot.verify():
+        raise RuntimeError(
+            "Source snapshot verification failed"
+        )
 
     journal = prepare_execution(
         plan,
