@@ -4,6 +4,7 @@ from .manager import MaintenanceManager
 from .plan import MaintenanceState
 from .preflight import run_preflight
 from .executor import execute_dry_run
+from .execution import execute_plan
 
 
 def show_maintenance_plans(
@@ -109,6 +110,7 @@ def show_plan_details(
         if plan.state is MaintenanceState.APPROVED:
             print("[P] Run Preflight")
             print("[D] Dry Run Execution")
+            print("[E] Execute Repair")
 
         print("[B] Back")
         print()
@@ -221,6 +223,79 @@ def show_plan_details(
             print()
             print(
                 "No files have been changed."
+            )
+
+            input(
+                "\nPress Enter to continue..."
+            )
+
+        elif (
+            choice == "e"
+            and plan.state is MaintenanceState.APPROVED
+        ):
+            print()
+            print("Maintenance Execution Warning")
+            print("═══════════════════════════")
+            print()
+            print(
+                f"Plan    : {plan.id}"
+            )
+            print(
+                f"Actions : {plan.total_actions}"
+            )
+            print()
+            print(
+                "Mode:"
+            )
+            print(
+                "COPY → VERIFY → REMOVE"
+            )
+            print()
+
+            confirm = input(
+                "Type YES to continue: "
+            ).strip()
+
+            if confirm != "YES":
+                print(
+                    "Execution cancelled."
+                )
+
+                input(
+                    "\nPress Enter to continue..."
+                )
+
+                continue
+
+            journal = execute_plan(
+                plan,
+                Path(
+                    "/data/library1/deckflix-logs/maintenance"
+                )
+                / f"{plan.id}-journal.json",
+            )
+
+            verified = sum(
+                1
+                for entry in journal.entries
+                if entry.status.value == "VERIFIED"
+            )
+
+            failed = sum(
+                1
+                for entry in journal.entries
+                if entry.status.value == "FAILED"
+            )
+
+            print()
+            print("Maintenance Complete")
+            print("═══════════════════")
+            print()
+            print(
+                f"Verified : {verified}"
+            )
+            print(
+                f"Failed   : {failed}"
             )
 
             input(
