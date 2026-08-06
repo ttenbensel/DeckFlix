@@ -21,6 +21,38 @@ def _clean_title(title: str) -> str:
     return " ".join(title.split()).strip()
 
 
+def _clean_tv_title(title: str) -> str:
+    title = re.sub(
+        r"\bseason[ ._-]*\d+\b",
+        "",
+        title,
+        flags=re.IGNORECASE,
+    )
+
+    title = re.sub(
+        r"\bseries[ ._-]*\d+\b",
+        "",
+        title,
+        flags=re.IGNORECASE,
+    )
+
+    title = re.sub(
+        r"\b(christmas|holiday|halloween)\s+specials?\b.*$",
+        "",
+        title,
+        flags=re.IGNORECASE,
+    )
+
+    title = re.sub(
+        r"\b(special|specials|extra|extras)\b.*$",
+        "",
+        title,
+        flags=re.IGNORECASE,
+    )
+
+    return _clean_title(title)
+
+
 def parse_filename(
     filename: str,
     context: str | None = None,
@@ -48,7 +80,7 @@ def parse_filename(
     if EXTRA_PATTERN.search(search_text):
         return MediaMetadata(
             media_type="tv",
-            title=_clean_title(stem),
+            title=_clean_tv_title(stem),
             content_type="extra",
             resolution=resolution,
             source=source,
@@ -56,10 +88,29 @@ def parse_filename(
             container=container,
         )
 
-    if SPECIAL_PATTERN.search(search_text):
+    tv_context = (
+        TV_PATTERN.search(stem)
+        or (
+            context
+            and TV_CONTEXT_PATTERN.search(context)
+        )
+    )
+
+    is_special_title = (
+        " special" in stem.lower()
+        or " specials" in stem.lower()
+    )
+
+    if (
+        SPECIAL_PATTERN.search(search_text)
+        and (
+            tv_context
+            or is_special_title
+        )
+    ):
         return MediaMetadata(
             media_type="tv",
-            title=_clean_title(stem),
+            title=_clean_tv_title(stem),
             content_type="special",
             resolution=resolution,
             source=source,
@@ -92,11 +143,11 @@ def parse_filename(
             or groups.get("e7")
         )
 
-        title = _clean_title(stem[:tv_match.start()])
-
         return MediaMetadata(
             media_type="tv",
-            title=title,
+            title=_clean_title(
+                stem[:tv_match.start()]
+            ),
             content_type="episode",
             season=season,
             episode=episode,
@@ -117,15 +168,22 @@ def parse_filename(
         scene_match = SCENE_EPISODE_PATTERN.search(stem)
 
         if season_match and scene_match:
-            season = int(season_match.group(1))
 
-            code = scene_match.group("scene_episode")
+            season = int(
+                season_match.group(1)
+            )
+
+            code = scene_match.group(
+                "scene_episode"
+            )
 
             episode = int(code[-2:])
 
             return MediaMetadata(
                 media_type="tv",
-                title=_clean_title(stem[:scene_match.start()]),
+                title=_clean_title(
+                    stem[:scene_match.start()]
+                ),
                 content_type="episode",
                 season=season,
                 episode=episode,
@@ -151,7 +209,10 @@ def parse_filename(
     years = YEAR_PATTERN.findall(stem)
 
     if years:
-        matches = list(YEAR_PATTERN.finditer(stem))
+
+        matches = list(
+            YEAR_PATTERN.finditer(stem)
+        )
 
         first_year = matches[0]
 
@@ -160,17 +221,22 @@ def parse_filename(
             and len(matches) > 1
         ):
             title = stem[:first_year.end()]
-            year = int(matches[1].group(1))
+            year = int(
+                matches[1].group(1)
+            )
 
         else:
-            year = int(first_year.group(1))
-            title = stem[:first_year.start()].rstrip(" ([{-_.")
+            year = int(
+                first_year.group(1)
+            )
 
-    title = _clean_title(title)
+            title = stem[
+                :first_year.start()
+            ].rstrip(" ([{-_.")
 
     return MediaMetadata(
         media_type="movie",
-        title=title,
+        title=_clean_title(title),
         content_type="movie",
         year=year,
         resolution=resolution,

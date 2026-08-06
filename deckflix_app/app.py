@@ -30,11 +30,13 @@ from deckflix_app.system_verification import run_system_verification
 from deckflix_app.library_health import show_library_health
 from deckflix_app.duplicate_inspector import show_duplicate_inspector
 from deckflix_app.repair_queue_screen import show_repair_queue
+from deckflix_app.maintenance.screen import show_repair_preview
 from deckflix_app.maintenance_ui import (
     system_verification,
     library_health,
     repair_preview,
     duplicate_inspector,
+    maintenance_plans,
 )
 from deckflix_app.operations_ui import (
     begin_operation,
@@ -135,9 +137,11 @@ def main():
                 print("Review & Approve Repairs")
                 print("───────────────────────")
                 print("1. Review Decisions")
-                print("2. Duplicate Inspector")
-                print("3. Repair Queue")
-                print("4. Back")
+                print("2. Misplaced TV Content")
+                print("3. Duplicate Inspector")
+                print("4. Repair Queue")
+                print("5. Maintenance Plans")
+                print("6. Back")
                 print()
 
                 sub = input("Select option: ").strip()
@@ -148,19 +152,32 @@ def main():
                     )
 
                 elif sub == "2":
-                    duplicate_inspector(
+                    show_repair_preview(
                         MOVIES,
                         TV,
                     )
 
                 elif sub == "3":
-                    show_repair_queue()
+                    duplicate_inspector(
+                        MOVIES,
+                        TV,
+                    )
 
                 elif sub == "4":
+                    show_repair_queue()
+
+                elif sub == "5":
+                    maintenance_plans(
+                        CONFIG.report_directory
+                        / "maintenance"
+                    )
+
+                elif sub == "6":
                     break
 
                 else:
                     print("Invalid option.")
+
 
         elif choice == "4":
             while True:
