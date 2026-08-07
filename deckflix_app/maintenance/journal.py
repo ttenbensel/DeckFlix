@@ -55,10 +55,12 @@ class MaintenanceJournal:
             created_at=datetime.now(),
         )
 
+        # Capture metadata only.
+        # Do not checksum during journal creation.
+        # Checksums happen during verification after copy.
         if source.exists():
-            entry.source_size = source.stat().st_size
-            entry.source_checksum = file_checksum(
-                source
+            entry.source_size = (
+                source.stat().st_size
             )
 
         self.entries.append(
@@ -86,6 +88,12 @@ class MaintenanceJournal:
                 entry.destination_checksum = (
                     file_checksum(
                         entry.destination
+                    )
+                )
+
+                entry.source_checksum = (
+                    file_checksum(
+                        entry.source
                     )
                 )
 
@@ -139,6 +147,8 @@ class MaintenanceJournal:
             + "\n",
             encoding="utf-8",
         )
+
+
     @classmethod
     def load(
         cls,

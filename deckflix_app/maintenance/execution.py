@@ -65,12 +65,18 @@ def execute_plan(
 
     Safety flow:
 
+    JOURNAL
     SNAPSHOT
     VERIFY
     COPY
     VERIFY DESTINATION
     REMOVE SOURCE
     """
+
+    journal = prepare_execution(
+        plan,
+        journal_path,
+    )
 
     snapshot = create_plan_snapshot(
         plan,
@@ -80,11 +86,6 @@ def execute_plan(
         raise RuntimeError(
             "Source snapshot verification failed"
         )
-
-    journal = prepare_execution(
-        plan,
-        journal_path,
-    )
 
     for index, entry in enumerate(
         journal.entries,
