@@ -8,6 +8,7 @@ from .journal import (
 from .plan import MaintenancePlan
 from .verify import verify_integrity
 from .snapshot import MaintenanceSnapshot
+from .progress import MaintenanceProgress
 
 
 def prepare_execution(
@@ -59,6 +60,7 @@ def create_plan_snapshot(
 def execute_plan(
     plan: MaintenancePlan,
     journal_path: Path,
+    progress: MaintenanceProgress | None = None,
 ) -> MaintenanceJournal:
     """
     Resume-aware maintenance execution.
@@ -70,6 +72,7 @@ def execute_plan(
     VERIFY
     COPY
     VERIFY DESTINATION
+    JOURNAL COMPLETE
     REMOVE SOURCE
     """
 
@@ -77,6 +80,17 @@ def execute_plan(
         plan,
         journal_path,
     )
+
+    if progress:
+        progress.stage = "SNAPSHOT"
+        progress.total_files = len(
+            journal.entries
+        )
+        progress.total_bytes = sum(
+            entry.source_size or 0
+            for entry in journal.entries
+        )
+        progress.start()
 
     snapshot = create_plan_snapshot(
         plan,
@@ -86,6 +100,9 @@ def execute_plan(
         raise RuntimeError(
             "Source snapshot verification failed"
         )
+
+    if progress:
+        progress.stage = "COPYING"
 
     for index, entry in enumerate(
         journal.entries,
@@ -100,6 +117,11 @@ def execute_plan(
         try:
             source = entry.source
             destination = entry.destination
+
+            if progress:
+                progress.current_file = (
+                    source.name
+                )
 
             if not source.exists():
                 raise FileNotFoundError(
@@ -118,10 +140,16 @@ def execute_plan(
 
             journal.save()
 
+            if progress:
+                progress.stage = "COPYING"
+
             shutil.copy2(
                 source,
                 destination,
             )
+
+            if progress:
+                progress.stage = "VERIFYING"
 
             result = verify_integrity(
                 source,
@@ -133,14 +161,23 @@ def execute_plan(
                     result.reason
                 )
 
-            source.unlink()
-
             journal.update(
                 index,
                 JournalStatus.VERIFIED,
             )
 
             journal.save()
+
+            if progress:
+                progress.completed_files += 1
+                progress.completed_bytes += (
+                    entry.source_size or 0
+                )
+
+            if progress:
+                progress.stage = "REMOVING SOURCE"
+
+            source.unlink()
 
         except Exception as exc:
             journal.update(
@@ -152,5 +189,8 @@ def execute_plan(
             journal.save()
 
             break
+
+    if progress:
+        progress.stage = "COMPLETE"
 
     return journal
