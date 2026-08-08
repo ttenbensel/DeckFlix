@@ -35,6 +35,17 @@ JUNK_EXTENSIONS = {
     ".url",
 }
 
+PROTECTED_EXTENSIONS = {
+    ".app",
+}
+
+
+def is_protected_folder(
+    folder: Path,
+) -> bool:
+
+    return folder.suffix.lower() in PROTECTED_EXTENSIONS
+
 
 def scan_folder_contents(
     folder: Path,
@@ -92,6 +103,9 @@ def scan_orphans(
         if not folder.is_dir():
             continue
 
+        if is_protected_folder(folder):
+            continue
+
 
         counts = scan_folder_contents(
             folder
@@ -99,14 +113,14 @@ def scan_orphans(
 
 
         #
-        # Source still has media
+        # Source still contains playable media
         #
         if counts["video"] > 0:
             continue
 
 
         #
-        # Media already migrated
+        # Media exists in destination library
         #
         if folder.name in destination_names:
 
@@ -122,8 +136,8 @@ def scan_orphans(
                     metadata_files=counts["metadata"],
                     junk_files=counts["junk"],
                     reason=(
-                        "Media exists in destination "
-                        "library"
+                        "Media exists in "
+                        "destination library"
                     ),
                 )
             )
