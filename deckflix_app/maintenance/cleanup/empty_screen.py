@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 from .empty_planner import (
@@ -137,7 +138,12 @@ def show_empty_cleanup(
         Path(
             "/data/library1/deckflix-logs/maintenance"
         )
-        / "empty-directory-cleanup-journal.json"
+        /
+        (
+            "empty-directory-cleanup-"
+            f"{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+            "-journal.json"
+        )
     )
 
 
