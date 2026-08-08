@@ -4,7 +4,10 @@ from deckflix_app.config import load_config
 
 from .planner import plan_misplaced_tv
 from .plan import create_plan
-from .persistence import save_maintenance_plan
+from .persistence import (
+    save_maintenance_plan,
+)
+from .runner import run_with_progress
 
 
 def show_repair_preview(
@@ -29,6 +32,7 @@ def show_repair_preview(
     print(
         f"Misplaced TV Content : {len(actions)} files"
     )
+
     print()
 
     print("Examples")
@@ -43,6 +47,7 @@ def show_repair_preview(
         print(action.destination.parent)
 
     print()
+
     print("[A] Create Maintenance Plan")
     print("[B] Back")
     print()
@@ -51,36 +56,99 @@ def show_repair_preview(
         "Select option: "
     ).strip().lower()
 
-    if choice == "a":
-        plan = create_plan(actions)
+    if choice != "a":
+        return
 
-        config = load_config()
+    plan = create_plan(
+        actions,
+    )
 
-        plan_path = (
-            config.report_directory
-            / "maintenance"
-            / f"{plan.id}.json"
-        )
+    config = load_config()
 
-        save_maintenance_plan(
-            plan,
-            plan_path,
-        )
+    plan_path = (
+        config.report_directory
+        / "maintenance"
+        / f"{plan.id}.json"
+    )
 
-        print()
-        print("Maintenance Plan Created")
-        print("═══════════════════════")
-        print()
-        print(f"ID      : {plan.id}")
-        print(f"Actions : {plan.total_actions}")
-        print(f"State   : {plan.state.value}")
-        print()
-        print("Saved:")
-        print(plan_path)
+    save_maintenance_plan(
+        plan,
+        plan_path,
+    )
+
+    print()
+    print("Maintenance Plan Created")
+    print("═══════════════════════")
+    print()
+    print(f"ID      : {plan.id}")
+    print(f"Actions : {plan.total_actions}")
+    print(f"State   : {plan.state.value}")
+    print()
+    print("Saved:")
+    print(plan_path)
+
+    print()
+
+    print("[E] Approve & Execute")
+    print("[S] Save Only")
+    print()
+
+    next_action = input(
+        "Select option: "
+    ).strip().lower()
+
+    if next_action != "e":
         print()
         print(
-            "No files have been moved."
+            "Plan saved. No files have been moved."
         )
+
+        input(
+            "\nPress Enter to return..."
+        )
+
+        return
+
+    print()
+    print("Starting Maintenance Operation")
+    print("════════════════════════════")
+    print()
+
+    journal_path = (
+        config.report_directory
+        / "maintenance"
+        / f"{plan.id}-journal.json"
+    )
+
+    journal = run_with_progress(
+        plan,
+        journal_path,
+    )
+
+    print()
+    print("Maintenance Complete")
+    print("═══════════════════")
+    print()
+
+    verified = sum(
+        1
+        for entry in journal.entries
+        if entry.status.value == "VERIFIED"
+    )
+
+    failed = sum(
+        1
+        for entry in journal.entries
+        if entry.status.value == "FAILED"
+    )
+
+    print(
+        f"Verified : {verified}"
+    )
+
+    print(
+        f"Failed   : {failed}"
+    )
 
     input(
         "\nPress Enter to return..."

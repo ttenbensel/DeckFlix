@@ -4,8 +4,9 @@ from .manager import MaintenanceManager
 from .plan import MaintenanceState
 from .preflight import run_preflight
 from .executor import execute_dry_run
-from .execution import execute_plan
+from .runner import run_with_progress
 from .certificate import print_maintenance_certificate
+
 
 def show_maintenance_plans(
     directory: Path,
@@ -24,9 +25,11 @@ def show_maintenance_plans(
 
         if not plans:
             print("No maintenance plans found.")
+
             input(
                 "\nPress Enter to return..."
             )
+
             return
 
         for index, plan_path in enumerate(
@@ -40,14 +43,17 @@ def show_maintenance_plans(
             print(
                 f"{index}. {plan.id}"
             )
+
             print(
                 f"   Actions : "
                 f"{plan.total_actions}"
             )
+
             print(
                 f"   State   : "
                 f"{plan.state.value}"
             )
+
             print()
 
         print("[B] Back")
@@ -61,6 +67,7 @@ def show_maintenance_plans(
             return
 
         if choice.isdigit():
+
             index = int(choice) - 1
 
             if 0 <= index < len(plans):
@@ -82,25 +89,45 @@ def show_plan_details(
         return
 
     while True:
+
         print()
         print("Maintenance Plan")
         print("════════════════")
         print()
-        print(f"ID      : {plan.id}")
-        print(f"Actions : {plan.total_actions}")
-        print(f"State   : {plan.state.value}")
+
+        print(
+            f"ID      : {plan.id}"
+        )
+
+        print(
+            f"Actions : {plan.total_actions}"
+        )
+
+        print(
+            f"State   : {plan.state.value}"
+        )
+
         print()
 
         print("Examples")
         print("────────")
 
         for action in plan.actions[:10]:
+
             print()
-            print(action.source.name)
+            print(
+                action.source.name
+            )
+
             print("FROM:")
-            print(action.source.parent)
+            print(
+                action.source.parent
+            )
+
             print("TO:")
-            print(action.destination)
+            print(
+                action.destination
+            )
 
         print()
 
@@ -119,20 +146,27 @@ def show_plan_details(
             "Select option: "
         ).strip().lower()
 
+
         if choice == "b":
             return
+
 
         if (
             choice == "a"
             and plan.state is MaintenanceState.CREATED
         ):
+
             plan = manager.approve(
                 plan,
             )
 
             print()
-            print("Maintenance Plan Approved")
-            print("═══════════════════════")
+            print(
+                "Maintenance Plan Approved"
+            )
+            print(
+                "═══════════════════════"
+            )
             print()
             print(
                 "No files have been moved."
@@ -142,40 +176,52 @@ def show_plan_details(
                 "\nPress Enter to continue..."
             )
 
+
         elif (
             choice == "p"
             and plan.state is MaintenanceState.APPROVED
         ):
+
             result = run_preflight(
                 plan,
             )
 
             print()
-            print("Maintenance Preflight")
-            print("════════════════════")
+            print(
+                "Maintenance Preflight"
+            )
+            print(
+                "════════════════════"
+            )
             print()
+
             print(
                 f"Actions            : "
                 f"{result.total_actions}"
             )
+
             print(
                 f"Missing Sources    : "
                 f"{result.missing_sources}"
             )
+
             print(
                 f"Destination Issues : "
                 f"{result.destination_conflicts}"
             )
+
             print(
                 f"Estimated Bytes    : "
                 f"{result.estimated_bytes:,}"
             )
+
             print()
 
             if result.safe:
                 print(
                     "Result: SAFE TO EXECUTE"
                 )
+
             else:
                 print(
                     "Result: REVIEW REQUIRED"
@@ -185,42 +231,54 @@ def show_plan_details(
                 "\nPress Enter to continue..."
             )
 
+
         elif (
             choice == "d"
             and plan.state is MaintenanceState.APPROVED
         ):
+
             result = execute_dry_run(
                 plan,
             )
 
             print()
-            print("Maintenance Dry Run")
-            print("═══════════════════")
+            print(
+                "Maintenance Dry Run"
+            )
+            print(
+                "═══════════════════"
+            )
             print()
+
             print(
                 f"Actions  : "
                 f"{result.total}"
             )
+
             print(
                 f"Reviewed : "
                 f"{result.reviewed}"
             )
+
             print(
                 f"Failed   : "
                 f"{result.failed}"
             )
+
             print()
 
             if result.successful:
                 print(
                     "Result: SUCCESS"
                 )
+
             else:
                 print(
                     "Result: REVIEW REQUIRED"
                 )
 
             print()
+
             print(
                 "No files have been changed."
             )
@@ -229,24 +287,36 @@ def show_plan_details(
                 "\nPress Enter to continue..."
             )
 
+
         elif (
             choice == "e"
             and plan.state is MaintenanceState.APPROVED
         ):
+
             print()
-            print("Maintenance Execution Warning")
-            print("════════════════════════════")
+
+            print(
+                "Maintenance Execution Warning"
+            )
+
+            print(
+                "════════════════════════════"
+            )
+
             print()
 
             print(
                 f"Plan      : {plan.id}"
             )
+
             print(
                 "Operation : Misplaced TV Content Repair"
             )
+
             print(
                 f"Actions   : {plan.total_actions}"
             )
+
             print()
 
             estimated_bytes = sum(
@@ -261,33 +331,41 @@ def show_plan_details(
             )
 
             print()
+
             print(
                 "Source:"
             )
+
             print(
                 plan.actions[0].source.parent
             )
 
             print()
+
             print(
                 "Destination:"
             )
+
             print(
                 plan.actions[0].destination.parent
             )
 
             print()
+
             print(
                 "Method:"
             )
+
             print(
                 "COPY → VERIFY → REMOVE"
             )
 
             print()
+
             print(
                 "Snapshot : READY"
             )
+
             print(
                 "Journal  : ENABLED"
             )
@@ -299,6 +377,7 @@ def show_plan_details(
             ).strip()
 
             if confirm != "YES":
+
                 print(
                     "Execution cancelled."
                 )
@@ -309,13 +388,45 @@ def show_plan_details(
 
                 continue
 
-            journal = execute_plan(
-                plan,
+
+            journal_path = (
                 Path(
                     "/data/library1/deckflix-logs/maintenance"
                 )
-                / f"{plan.id}-journal.json",
+                / f"{plan.id}-journal.json"
             )
+
+            try:
+
+                journal = run_with_progress(
+                    plan,
+                    journal_path,
+                )
+
+            except Exception as exc:
+
+                print()
+
+                print(
+                    "Maintenance Failed"
+                )
+
+                print(
+                    "══════════════════"
+                )
+
+                print()
+
+                print(
+                    exc
+                )
+
+                input(
+                    "\nPress Enter to continue..."
+                )
+
+                continue
+
 
             verified = sum(
                 1
@@ -330,15 +441,26 @@ def show_plan_details(
             )
 
             print()
-            print("Maintenance Complete")
-            print("═══════════════════")
+
+            print(
+                "Maintenance Complete"
+            )
+
+            print(
+                "═══════════════════"
+            )
+
             print()
+
             print(
                 f"Verified : {verified}"
             )
+
             print(
                 f"Failed   : {failed}"
             )
+
+            print()
 
             print_maintenance_certificate(
                 journal
