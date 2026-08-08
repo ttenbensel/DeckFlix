@@ -6,6 +6,7 @@ from enum import Enum
 class CleanupActionType(str, Enum):
     REMOVE_EMPTY_DIRECTORY = "REMOVE_EMPTY_DIRECTORY"
     REMOVE_FILE = "REMOVE_FILE"
+    REMOVE_DIRECTORY_TREE = "REMOVE_DIRECTORY_TREE"
 
 
 @dataclass(slots=True)

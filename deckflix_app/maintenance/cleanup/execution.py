@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 
 from .journal import (
     CleanupJournal,
@@ -23,6 +24,7 @@ def prepare_cleanup(
     if journal.entries:
         return journal
 
+
     for action in plan.actions:
 
         journal.add(
@@ -46,6 +48,7 @@ def execute_cleanup(
         journal_path,
     )
 
+
     for index, entry in enumerate(
         journal.entries,
     ):
@@ -53,12 +56,15 @@ def execute_cleanup(
         if entry.status is CleanupStatus.VERIFIED:
             continue
 
+
         if entry.status is CleanupStatus.FAILED:
             break
+
 
         try:
 
             path = entry.path
+
 
             if not path.exists():
 
@@ -80,13 +86,37 @@ def execute_cleanup(
             journal.save()
 
 
-            if path.is_dir():
+            if (
+                entry.action
+                == CleanupActionType.REMOVE_DIRECTORY_TREE.value
+            ):
+
+                shutil.rmtree(
+                    path
+                )
+
+
+            elif (
+                entry.action
+                == CleanupActionType.REMOVE_EMPTY_DIRECTORY.value
+            ):
 
                 path.rmdir()
 
-            else:
+
+            elif (
+                entry.action
+                == CleanupActionType.REMOVE_FILE.value
+            ):
 
                 path.unlink()
+
+
+            else:
+
+                raise RuntimeError(
+                    f"Unknown cleanup action: {entry.action}"
+                )
 
 
             if path.exists():
@@ -118,4 +148,3 @@ def execute_cleanup(
 
 
     return journal
-
