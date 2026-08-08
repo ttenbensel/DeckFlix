@@ -15,10 +15,17 @@ def create_empty_directory_plan(
         source=source,
     )
 
-    for item in source.rglob("*"):
+    directories = sorted(
+        (
+            item
+            for item in source.rglob("*")
+            if item.is_dir()
+        ),
+        key=lambda p: len(p.parts),
+        reverse=True,
+    )
 
-        if not item.is_dir():
-            continue
+    for item in directories:
 
         try:
             next(item.iterdir())
