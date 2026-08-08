@@ -7,6 +7,22 @@ from .plan import (
 )
 
 
+PROTECTED_DIRECTORY_SUFFIXES = {
+    ".app",
+}
+
+
+def is_inside_protected_directory(
+    path: Path,
+) -> bool:
+
+    return any(
+        parent.suffix.lower()
+        in PROTECTED_DIRECTORY_SUFFIXES
+        for parent in path.parents
+    )
+
+
 def create_empty_directory_plan(
     source: Path,
 ) -> CleanupPlan:
@@ -26,6 +42,11 @@ def create_empty_directory_plan(
     )
 
     for item in directories:
+
+        if is_inside_protected_directory(
+            item,
+        ):
+            continue
 
         try:
             next(item.iterdir())
