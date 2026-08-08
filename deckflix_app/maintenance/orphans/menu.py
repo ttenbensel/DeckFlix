@@ -1,6 +1,58 @@
 from pathlib import Path
 
 from .scanner import scan_orphans
+from .detail import show_orphan_detail
+
+
+def show_list(
+    title,
+    items,
+):
+
+    while True:
+
+        print()
+
+        print(title)
+
+        print(
+            "─────────────"
+        )
+
+        for index, item in enumerate(
+            items,
+            start=1,
+        ):
+            print(
+                f"{index}. {item.path.name}"
+            )
+
+        print()
+
+        print(
+            "[B] Back"
+        )
+
+        choice = input(
+            "Select item: "
+        ).strip().lower()
+
+
+        if choice == "b":
+            return
+
+
+        if choice.isdigit():
+
+            number = int(choice)
+
+            if (
+                number >= 1
+                and number <= len(items)
+            ):
+                show_orphan_detail(
+                    items[number - 1]
+                )
 
 
 def show_orphan_menu(
@@ -14,6 +66,7 @@ def show_orphan_menu(
             source,
             destination,
         )
+
 
         migration = [
             item
@@ -79,8 +132,6 @@ def show_orphan_menu(
             "[B] Back"
         )
 
-        print()
-
 
         choice = input(
             "Select option: "
@@ -90,68 +141,23 @@ def show_orphan_menu(
         if choice == "b":
             return
 
-
         elif choice == "m":
 
-            print()
-
-            print(
-                "MIGRATION LEFTOVERS"
+            show_list(
+                "MIGRATION LEFTOVERS",
+                migration,
             )
-
-            print(
-                "──────────────────"
-            )
-
-            for item in migration[:20]:
-                print()
-                print(item.path)
-
-
-            input(
-                "\nPress Enter..."
-            )
-
 
         elif choice == "r":
 
-            print()
-
-            print(
-                "RELEASE JUNK"
+            show_list(
+                "RELEASE JUNK",
+                release,
             )
-
-            print(
-                "────────────"
-            )
-
-            for item in release[:20]:
-                print()
-                print(item.path)
-
-
-            input(
-                "\nPress Enter..."
-            )
-
 
         elif choice == "o":
 
-            print()
-
-            print(
-                "ORPHAN MOVIES"
-            )
-
-            print(
-                "─────────────"
-            )
-
-            for item in orphan[:20]:
-                print()
-                print(item.path)
-
-
-            input(
-                "\nPress Enter..."
+            show_list(
+                "ORPHAN MOVIES",
+                orphan,
             )
