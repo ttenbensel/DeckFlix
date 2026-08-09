@@ -13,7 +13,6 @@ def show_health_report(
         destination,
     )
 
-
     print()
 
     print(
@@ -52,6 +51,31 @@ def show_health_report(
     print(
         f"Manual review       : "
         f"{report.orphan_movies}"
+    )
+
+    print()
+
+    print(
+        "QUALITY ANALYSIS"
+    )
+
+    print(
+        "────────────────"
+    )
+
+    print(
+        f"Duplicate media     : "
+        f"{report.duplicate_media}"
+    )
+
+    print(
+        f"Source better       : "
+        f"{report.source_better}"
+    )
+
+    print(
+        f"Quality review      : "
+        f"{report.quality_review}"
     )
 
     print()
