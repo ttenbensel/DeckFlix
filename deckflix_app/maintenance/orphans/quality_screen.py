@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from .duplicate_scanner import scan_duplicates
+from .quality_detail import show_quality_detail
 
 
 def show_quality_list(
@@ -54,6 +55,19 @@ def show_quality_list(
         if choice == "b":
             return
 
+
+        if choice.isdigit():
+
+            number = int(choice)
+
+            if (
+                number >= 1
+                and number <= len(items)
+            ):
+
+                show_quality_detail(
+                    items[number - 1]
+                )
 
 
 def show_quality_review(
