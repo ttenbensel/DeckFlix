@@ -19,7 +19,6 @@ def show_quality_list(
             "─────────────"
         )
 
-
         if not items:
 
             print(
@@ -53,6 +52,7 @@ def show_quality_list(
 
 
         if choice == "b":
+
             return
 
 
@@ -68,6 +68,7 @@ def show_quality_list(
                 show_quality_detail(
                     items[number - 1]
                 )
+
 
 
 def show_quality_review(
@@ -120,18 +121,15 @@ def show_quality_review(
         print()
 
         print(
-            f"Duplicate media : "
-            f"{len(duplicate_media)}"
+            f"Duplicate media : {len(duplicate_media)}"
         )
 
         print(
-            f"Source better   : "
-            f"{len(source_better)}"
+            f"Source better   : {len(source_better)}"
         )
 
         print(
-            f"Quality review  : "
-            f"{len(quality_review)}"
+            f"Quality review  : {len(quality_review)}"
         )
 
 
@@ -160,6 +158,7 @@ def show_quality_review(
 
 
         if choice == "b":
+
             return
 
 

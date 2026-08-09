@@ -28,32 +28,39 @@ def show_quality_detail(
     print()
 
     print(
-        "Title:"
+        "Reason:"
     )
 
     print(
-        item.source.title
+        item.reason
     )
-
-    if item.source.year:
-
-        print(
-            f"Year: {item.source.year}"
-        )
 
     print()
 
-
     print(
-        "SOURCE MEDIA"
+        "MEDIA"
     )
 
     print(
-        "────────────"
+        "─────"
     )
 
     print(
-        "Path:"
+        f"Title: {item.source.title}"
+    )
+
+    print(
+        f"Year: {item.source.year}"
+    )
+
+    print()
+
+    print(
+        "SOURCE FILE"
+    )
+
+    print(
+        "───────────"
     )
 
     print(
@@ -63,34 +70,25 @@ def show_quality_detail(
     print()
 
     print(
-        f"Resolution : "
-        f"{item.source.resolution or 'Unknown'}"
+        f"Resolution : {item.source.resolution}"
     )
 
     print(
-        f"Source     : "
-        f"{item.source.source or 'Unknown'}"
+        f"Source     : {item.source.source}"
     )
 
     print(
-        f"Codec      : "
-        f"{item.source.video_codec or 'Unknown'}"
+        f"Codec      : {item.source.video_codec}"
     )
-
 
     print()
 
-
     print(
-        "DESTINATION MEDIA"
+        "DESTINATION FILE"
     )
 
     print(
-        "─────────────────"
-    )
-
-    print(
-        "Path:"
+        "────────────────"
     )
 
     print(
@@ -100,23 +98,18 @@ def show_quality_detail(
     print()
 
     print(
-        f"Resolution : "
-        f"{item.destination.resolution or 'Unknown'}"
+        f"Resolution : {item.destination.resolution}"
     )
 
     print(
-        f"Source     : "
-        f"{item.destination.source or 'Unknown'}"
+        f"Source     : {item.destination.source}"
     )
 
     print(
-        f"Codec      : "
-        f"{item.destination.video_codec or 'Unknown'}"
+        f"Codec      : {item.destination.video_codec}"
     )
-
 
     print()
-
 
     print(
         "RECOMMENDATION"
@@ -126,9 +119,37 @@ def show_quality_detail(
         "──────────────"
     )
 
-    print(
-        item.reason
-    )
+    if item.classification.value == "SOURCE_BETTER":
+
+        print(
+            "Source appears higher quality"
+        )
+
+        print(
+            "Review upgrade opportunity"
+        )
+
+
+    elif item.classification.value == "DUPLICATE_MEDIA":
+
+        print(
+            "Destination appears equal or better"
+        )
+
+        print(
+            "No upgrade required"
+        )
+
+
+    else:
+
+        print(
+            "Quality difference uncertain"
+        )
+
+        print(
+            "Manual review recommended"
+        )
 
 
     print()
