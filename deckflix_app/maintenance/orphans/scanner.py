@@ -13,11 +13,13 @@ VIDEO_EXTENSIONS = {
     ".mov",
 }
 
+
 SUBTITLE_EXTENSIONS = {
     ".srt",
     ".sub",
     ".ass",
 }
+
 
 IMAGE_EXTENSIONS = {
     ".jpg",
@@ -25,9 +27,11 @@ IMAGE_EXTENSIONS = {
     ".png",
 }
 
+
 METADATA_EXTENSIONS = {
     ".nfo",
 }
+
 
 JUNK_EXTENSIONS = {
     ".txt",
@@ -35,8 +39,19 @@ JUNK_EXTENSIONS = {
     ".url",
 }
 
+
 PROTECTED_EXTENSIONS = {
     ".app",
+}
+
+
+COLLECTION_KEYWORDS = {
+    "movies",
+    "series",
+    "collection",
+    "collections",
+    "saga",
+    "trilogy",
 }
 
 
@@ -45,6 +60,29 @@ def is_protected_folder(
 ) -> bool:
 
     return folder.suffix.lower() in PROTECTED_EXTENSIONS
+
+
+def looks_like_collection(
+    folder: Path,
+) -> bool:
+
+    name = folder.name.lower()
+
+    if any(
+        keyword in name
+        for keyword in COLLECTION_KEYWORDS
+    ):
+        return True
+
+
+    child_directories = [
+        item
+        for item in folder.iterdir()
+        if item.is_dir()
+    ]
+
+
+    return len(child_directories) > 1
 
 
 def scan_folder_contents(
@@ -59,12 +97,15 @@ def scan_folder_contents(
         "junk": 0,
     }
 
+
     for item in folder.rglob("*"):
 
         if not item.is_file():
             continue
 
+
         suffix = item.suffix.lower()
+
 
         if suffix in VIDEO_EXTENSIONS:
             counts["video"] += 1
@@ -81,6 +122,7 @@ def scan_folder_contents(
         elif suffix in JUNK_EXTENSIONS:
             counts["junk"] += 1
 
+
     return counts
 
 
@@ -90,6 +132,7 @@ def scan_orphans(
 ) -> list[OrphanCandidate]:
 
     results = []
+
 
     destination_names = {
         folder.name
@@ -103,6 +146,7 @@ def scan_orphans(
         if not folder.is_dir():
             continue
 
+
         if is_protected_folder(folder):
             continue
 
@@ -110,6 +154,32 @@ def scan_orphans(
         counts = scan_folder_contents(
             folder
         )
+
+
+        #
+        # Protect collection containers
+        #
+        if looks_like_collection(folder):
+
+            results.append(
+                OrphanCandidate(
+                    path=folder,
+                    classification=(
+                        OrphanType.COLLECTION_CONTAINER
+                    ),
+                    video_files=counts["video"],
+                    subtitle_files=counts["subtitle"],
+                    image_files=counts["image"],
+                    metadata_files=counts["metadata"],
+                    junk_files=counts["junk"],
+                    reason=(
+                        "Collection container "
+                        "protected from cleanup"
+                    ),
+                )
+            )
+
+            continue
 
 
         #

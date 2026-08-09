@@ -1,7 +1,10 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .models import OrphanCandidate, OrphanType
+from .models import (
+    OrphanCandidate,
+    OrphanType,
+)
 
 
 @dataclass
@@ -18,6 +21,7 @@ class OrphanCleanupPlan:
 
 def create_orphan_cleanup_plan(
     results: list[OrphanCandidate],
+    include_release_junk: bool = False,
 ) -> OrphanCleanupPlan:
 
     source = (
@@ -30,12 +34,10 @@ def create_orphan_cleanup_plan(
         source=source
     )
 
-
     for item in results:
 
         #
-        # Migration leftovers:
-        # safe candidates after verification
+        # Safe automatic cleanup
         #
         if (
             item.classification
@@ -45,28 +47,31 @@ def create_orphan_cleanup_plan(
                 item
             )
 
+            continue
+
 
         #
-        # Release junk:
-        # candidate but requires review
+        # Optional cleanup
         #
-        elif (
+        if (
             item.classification
             == OrphanType.RELEASE_JUNK
+            and include_release_junk
         ):
             plan.actions.append(
                 item
             )
 
+            continue
+
 
         #
-        # True orphan movies:
-        # DO NOT include
+        # Manual review only
         #
-        elif (
-            item.classification
-            == OrphanType.ORPHAN_MOVIE
-        ):
+        if item.classification in {
+            OrphanType.ORPHAN_MOVIE,
+            OrphanType.COLLECTION_CONTAINER,
+        }:
             continue
 
 
