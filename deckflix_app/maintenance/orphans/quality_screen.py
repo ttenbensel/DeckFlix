@@ -1,7 +1,149 @@
 from pathlib import Path
 
 from .duplicate_scanner import scan_duplicates
-from .quality_detail import show_quality_detail
+
+
+def show_quality_detail(
+    item,
+):
+
+    print()
+
+    print(
+        "QUALITY DETAIL"
+    )
+
+    print(
+        "══════════════"
+    )
+
+    print()
+
+    print(
+        "MOVIE"
+    )
+
+    print(
+        "─────"
+    )
+
+    print(
+        f"{item.source.title}"
+    )
+
+    if item.source.year:
+
+        print(
+            f"Year: {item.source.year}"
+        )
+
+
+    print()
+
+    print(
+        "SOURCE MEDIA"
+    )
+
+    print(
+        "────────────"
+    )
+
+    print(
+        f"Path:"
+    )
+
+    print(
+        f"{item.source.path}"
+    )
+
+    print()
+
+    print(
+        f"Resolution : "
+        f"{item.source.resolution or 'Unknown'}"
+    )
+
+    print(
+        f"Source     : "
+        f"{item.source.source or 'Unknown'}"
+    )
+
+    print(
+        f"Codec      : "
+        f"{item.source.video_codec or 'Unknown'}"
+    )
+
+
+    print()
+
+    print(
+        "DESTINATION MEDIA"
+    )
+
+    print(
+        "─────────────────"
+    )
+
+    print(
+        f"Path:"
+    )
+
+    print(
+        f"{item.destination.path}"
+    )
+
+    print()
+
+    print(
+        f"Resolution : "
+        f"{item.destination.resolution or 'Unknown'}"
+    )
+
+    print(
+        f"Source     : "
+        f"{item.destination.source or 'Unknown'}"
+    )
+
+    print(
+        f"Codec      : "
+        f"{item.destination.video_codec or 'Unknown'}"
+    )
+
+
+    print()
+
+    print(
+        "CLASSIFICATION"
+    )
+
+    print(
+        "──────────────"
+    )
+
+    print(
+        item.classification.value
+    )
+
+    print()
+
+    print(
+        "REASON"
+    )
+
+    print(
+        "──────"
+    )
+
+    print(
+        item.reason
+    )
+
+    print()
+
+    input(
+        "Press Enter to continue..."
+    )
+
 
 
 def show_quality_list(
@@ -18,6 +160,7 @@ def show_quality_list(
         print(
             "─────────────"
         )
+
 
         if not items:
 
@@ -52,7 +195,6 @@ def show_quality_list(
 
 
         if choice == "b":
-
             return
 
 
@@ -121,17 +263,19 @@ def show_quality_review(
         print()
 
         print(
-            f"Duplicate media : {len(duplicate_media)}"
+            f"Duplicate media : "
+            f"{len(duplicate_media)}"
         )
 
         print(
-            f"Source better   : {len(source_better)}"
+            f"Source better   : "
+            f"{len(source_better)}"
         )
 
         print(
-            f"Quality review  : {len(quality_review)}"
+            f"Quality review  : "
+            f"{len(quality_review)}"
         )
-
 
         print()
 
@@ -158,7 +302,6 @@ def show_quality_review(
 
 
         if choice == "b":
-
             return
 
 
