@@ -7,6 +7,10 @@ from .plan_screen import show_cleanup_plan
 from .planner import create_orphan_cleanup_plan
 from .quality_screen import show_quality_review
 
+from deckflix_app.maintenance.decisions.history import (
+    show_decision_history,
+)
+
 
 def show_list(
     title,
@@ -35,6 +39,7 @@ def show_list(
                 items,
                 start=1,
             ):
+
                 print(
                     f"{index}. {item.path.name}"
                 )
@@ -52,6 +57,7 @@ def show_list(
 
 
         if choice == "b":
+
             return
 
 
@@ -63,9 +69,11 @@ def show_list(
                 number >= 1
                 and number <= len(items)
             ):
+
                 show_orphan_detail(
                     items[number - 1]
                 )
+
 
 
 def show_orphan_menu(
@@ -141,6 +149,10 @@ def show_orphan_menu(
         )
 
         print(
+            "[H] View decision history"
+        )
+
+        print(
             "[B] Back"
         )
 
@@ -151,6 +163,7 @@ def show_orphan_menu(
 
 
         if choice == "b":
+
             return
 
 
@@ -190,4 +203,16 @@ def show_orphan_menu(
             show_quality_review(
                 source,
                 destination,
+            )
+
+
+        elif choice == "h":
+
+            show_decision_history(
+                Path(
+                    "/data/library1/"
+                    "deckflix-logs/"
+                    "decisions/"
+                    "quality-decisions.json"
+                )
             )
