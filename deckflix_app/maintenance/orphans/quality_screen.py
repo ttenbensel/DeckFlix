@@ -49,11 +49,11 @@ def show_quality_detail(
     )
 
     print(
-        f"Path:"
+        "Path:"
     )
 
     print(
-        f"{item.source.path}"
+        item.source.path
     )
 
     print()
@@ -85,11 +85,11 @@ def show_quality_detail(
     )
 
     print(
-        f"Path:"
+        "Path:"
     )
 
     print(
-        f"{item.destination.path}"
+        item.destination.path
     )
 
     print()
@@ -124,6 +124,7 @@ def show_quality_detail(
         item.classification.value
     )
 
+
     print()
 
     print(
@@ -136,6 +137,43 @@ def show_quality_detail(
 
     print(
         item.reason
+    )
+
+
+    print()
+
+    print(
+        "RECOMMENDATION"
+    )
+
+    print(
+        "──────────────"
+    )
+
+
+    if item.classification.value == "SOURCE_BETTER":
+
+        print(
+            "Upgrade destination copy"
+        )
+
+    elif item.classification.value == "DUPLICATE_MEDIA":
+
+        print(
+            "Review duplicate copies"
+        )
+
+    else:
+
+        print(
+            "Manual quality review required"
+        )
+
+
+    print()
+
+    print(
+        "No automatic action taken"
     )
 
     print()
@@ -195,6 +233,7 @@ def show_quality_list(
 
 
         if choice == "b":
+
             return
 
 
@@ -260,6 +299,7 @@ def show_quality_review(
             "═══════════════════════"
         )
 
+
         print()
 
         print(
@@ -276,6 +316,7 @@ def show_quality_review(
             f"Quality review  : "
             f"{len(quality_review)}"
         )
+
 
         print()
 
@@ -302,6 +343,7 @@ def show_quality_review(
 
 
         if choice == "b":
+
             return
 
 
