@@ -109,6 +109,15 @@ def show_upgrade_review(
             )
 
 
+        if upgrade.status == UpgradeStatus.EXECUTED:
+
+            print(
+                "Upgrade complete"
+            )
+
+
+        print()
+
         print(
             "[B] Back"
         )
@@ -139,7 +148,7 @@ def show_upgrade_review(
                 journal_path
             )
 
-            journal.add(
+            journal.update(
                 upgrade
             )
 

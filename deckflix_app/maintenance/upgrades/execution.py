@@ -2,6 +2,7 @@ from pathlib import Path
 import shutil
 
 from .journal import UpgradeJournal
+
 from .models import (
     UpgradeCandidate,
     UpgradeStatus,
@@ -21,10 +22,14 @@ def execute_upgrade(
         journal_path
     )
 
+
     try:
 
         source = upgrade.source_path
-        destination = upgrade.destination_path
+
+        destination = (
+            upgrade.destination_path
+        )
 
 
         if not source.exists():
@@ -46,6 +51,13 @@ def execute_upgrade(
         )
 
 
+        journal.update(
+            upgrade
+        )
+
+        journal.save()
+
+
         backup = destination.with_suffix(
             destination.suffix
             + ".deckflix-backup"
@@ -55,11 +67,6 @@ def execute_upgrade(
         shutil.copy2(
             destination,
             backup,
-        )
-
-
-        upgrade.status = (
-            UpgradeStatus.VERIFYING
         )
 
 
@@ -73,6 +80,18 @@ def execute_upgrade(
             source,
             temporary,
         )
+
+
+        upgrade.status = (
+            UpgradeStatus.VERIFYING
+        )
+
+
+        journal.update(
+            upgrade
+        )
+
+        journal.save()
 
 
         result = verify_integrity(
@@ -98,7 +117,7 @@ def execute_upgrade(
         )
 
 
-        journal.add(
+        journal.update(
             upgrade
         )
 
@@ -115,10 +134,11 @@ def execute_upgrade(
         )
 
 
-        journal.add(
+        journal.update(
             upgrade
         )
 
         journal.save()
+
 
         raise

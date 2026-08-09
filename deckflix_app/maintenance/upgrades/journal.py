@@ -1,6 +1,12 @@
 import json
-from dataclasses import asdict, dataclass
+
+from dataclasses import (
+    asdict,
+    dataclass,
+)
+
 from datetime import datetime
+
 from pathlib import Path
 
 from .models import UpgradeCandidate
@@ -15,6 +21,7 @@ class UpgradeEntry:
     reason: str
     status: str
     created_at: str
+    updated_at: str | None = None
 
 
 class UpgradeJournal:
@@ -25,7 +32,10 @@ class UpgradeJournal:
     ):
 
         self.path = path
-        self.entries: list[UpgradeEntry] = []
+
+        self.entries: list[
+            UpgradeEntry
+        ] = []
 
 
     def add(
@@ -47,8 +57,60 @@ class UpgradeJournal:
                 ),
                 reason=upgrade.reason,
                 status=upgrade.status.value,
-                created_at=datetime.now().isoformat(),
+                created_at=(
+                    datetime.now()
+                    .isoformat()
+                ),
+                updated_at=None,
             )
+        )
+
+
+    def find(
+        self,
+        upgrade: UpgradeCandidate,
+    ):
+
+        for entry in self.entries:
+
+            if (
+                entry.source_path
+                == str(upgrade.source_path)
+                and
+                entry.destination_path
+                == str(upgrade.destination_path)
+            ):
+
+                return entry
+
+        return None
+
+
+    def update(
+        self,
+        upgrade: UpgradeCandidate,
+    ):
+
+        entry = self.find(
+            upgrade
+        )
+
+        if not entry:
+
+            self.add(
+                upgrade
+            )
+
+            return
+
+
+        entry.status = (
+            upgrade.status.value
+        )
+
+        entry.updated_at = (
+            datetime.now()
+            .isoformat()
         )
 
 
@@ -79,10 +141,14 @@ class UpgradeJournal:
         path: Path,
     ):
 
-        journal = cls(path)
+        journal = cls(
+            path
+        )
 
         if not path.exists():
+
             return journal
+
 
         data = json.loads(
             path.read_text(
@@ -90,14 +156,18 @@ class UpgradeJournal:
             )
         )
 
+
         journal.entries = [
+
             UpgradeEntry(
                 **entry
             )
+
             for entry in data.get(
                 "entries",
                 [],
             )
         ]
+
 
         return journal
