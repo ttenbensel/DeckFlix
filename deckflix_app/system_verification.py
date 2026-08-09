@@ -9,6 +9,7 @@ from deckflix_app.importer import (
     load_import_journal,
     save_import_journal,
 )
+
 from deckflix_app.operation import (
     OperationManager,
     create_shuttle_snapshot,
@@ -51,6 +52,7 @@ def _path_exists_check(
     name: str,
     path: Path,
 ) -> VerificationCheck:
+
     path = Path(path)
 
     return VerificationCheck(
@@ -64,9 +66,11 @@ def _directory_writable_check(
     name: str,
     path: Path,
 ) -> VerificationCheck:
+
     path = Path(path)
 
     try:
+
         path.mkdir(
             parents=True,
             exist_ok=True,
@@ -83,8 +87,10 @@ def _directory_writable_check(
         detail = str(path)
 
     except OSError as exc:
+
         passed = False
         detail = f"{path}: {exc}"
+
 
     return VerificationCheck(
         name=name,
@@ -93,32 +99,96 @@ def _directory_writable_check(
     )
 
 
+def _ship_mode_checks(
+    config,
+) -> list[VerificationCheck]:
+
+    return [
+
+        VerificationCheck(
+            name="Operating profile",
+            passed=(
+                config.operating_profile
+                in {
+                    "normal",
+                    "ship_limited",
+                    "ship_offline",
+                }
+            ),
+            detail=config.operating_profile,
+        ),
+
+        VerificationCheck(
+            name="Low impact mode",
+            passed=True,
+            detail=(
+                "Enabled"
+                if config.low_impact
+                else "Disabled"
+            ),
+        ),
+
+        VerificationCheck(
+            name="Network policy",
+            passed=True,
+            detail=(
+                "Offline"
+                if config.operating_profile
+                == "ship_offline"
+                else "Restricted"
+                if config.operating_profile
+                == "ship_limited"
+                else "Normal"
+            ),
+        ),
+    ]
+
+
 def _snapshot_engine_check() -> VerificationCheck:
+
     try:
+
         with tempfile.TemporaryDirectory(
             prefix="deckflix-snapshot-check-"
         ) as temporary:
-            root = Path(temporary)
-            media = root / "movie.mkv"
-            media.write_bytes(b"deckflix verification")
 
-            snapshot = create_shuttle_snapshot(root)
+            root = Path(temporary)
+
+            media = root / "movie.mkv"
+
+            media.write_bytes(
+                b"deckflix verification"
+            )
+
+
+            snapshot = create_shuttle_snapshot(
+                root
+            )
+
 
             passed = (
                 snapshot.file_count == 1
                 and snapshot.total_bytes
-                == len(b"deckflix verification")
-                and len(snapshot.fingerprint) == 64
+                == len(
+                    b"deckflix verification"
+                )
+                and len(snapshot.fingerprint)
+                == 64
             )
+
 
             detail = (
                 f"{snapshot.file_count} file, "
-                f"fingerprint {snapshot.fingerprint[:12]}..."
+                f"fingerprint "
+                f"{snapshot.fingerprint[:12]}..."
             )
 
+
     except Exception as exc:
+
         passed = False
         detail = str(exc)
+
 
     return VerificationCheck(
         name="Snapshot engine",
@@ -128,14 +198,18 @@ def _snapshot_engine_check() -> VerificationCheck:
 
 
 def _journal_engine_check() -> VerificationCheck:
+
     try:
+
         with tempfile.TemporaryDirectory(
             prefix="deckflix-journal-check-"
         ) as temporary:
+
             destination = (
                 Path(temporary)
                 / "journal.json"
             )
+
 
             journal = ImportJournal(
                 operation_id="DF-VERIFY-001",
@@ -150,14 +224,17 @@ def _journal_engine_check() -> VerificationCheck:
                 },
             )
 
+
             save_import_journal(
                 journal,
                 destination,
             )
 
+
             restored = load_import_journal(
                 destination
             )
+
 
             passed = (
                 restored is not None
@@ -166,15 +243,19 @@ def _journal_engine_check() -> VerificationCheck:
                 and restored.completed == 1
             )
 
+
             detail = (
                 "Atomic save and restore passed"
                 if passed
                 else "Restored journal did not match"
             )
 
+
     except Exception as exc:
+
         passed = False
         detail = str(exc)
+
 
     return VerificationCheck(
         name="Import journal",
@@ -186,16 +267,22 @@ def _journal_engine_check() -> VerificationCheck:
 def _operation_check(
     manager: OperationManager,
 ) -> VerificationCheck:
+
     if not manager.active:
+
         return VerificationCheck(
             name="Active operation",
             passed=True,
             detail="No active operation",
         )
 
+
     try:
+
         operation = manager.require_operation()
+
         valid = manager.validate_snapshot()
+
 
         return VerificationCheck(
             name="Active operation",
@@ -207,7 +294,9 @@ def _operation_check(
             ),
         )
 
+
     except Exception as exc:
+
         return VerificationCheck(
             name="Active operation",
             passed=False,
@@ -221,9 +310,12 @@ def run_system_verification(
     operation_manager: OperationManager,
     temp_directory: Path,
 ) -> SystemVerificationResult:
+
     checks = []
 
+
     shuttle = Path(config.shuttle)
+
 
     checks.append(
         _path_exists_check(
@@ -232,11 +324,14 @@ def run_system_verification(
         )
     )
 
+
     for index, library in enumerate(
         config.movie_libraries,
         start=1,
     ):
+
         library = Path(library)
+
 
         checks.append(
             _path_exists_check(
@@ -245,6 +340,7 @@ def run_system_verification(
             )
         )
 
+
         checks.append(
             _directory_writable_check(
                 f"Movie library {index} writable",
@@ -252,11 +348,14 @@ def run_system_verification(
             )
         )
 
+
     for index, library in enumerate(
         config.tv_libraries,
         start=1,
     ):
+
         library = Path(library)
+
 
         checks.append(
             _path_exists_check(
@@ -265,12 +364,14 @@ def run_system_verification(
             )
         )
 
+
         checks.append(
             _directory_writable_check(
                 f"TV library {index} writable",
                 library,
             )
         )
+
 
     checks.append(
         _directory_writable_check(
@@ -279,12 +380,14 @@ def run_system_verification(
         )
     )
 
+
     checks.append(
         _directory_writable_check(
             "Temporary directory writable",
             Path(temp_directory),
         )
     )
+
 
     checks.append(
         VerificationCheck(
@@ -298,17 +401,28 @@ def run_system_verification(
         )
     )
 
+
+    checks.extend(
+        _ship_mode_checks(
+            config
+        )
+    )
+
+
     checks.append(
         _snapshot_engine_check()
     )
+
     checks.append(
         _journal_engine_check()
     )
+
     checks.append(
         _operation_check(
             operation_manager
         )
     )
+
 
     return SystemVerificationResult(
         checks=checks
