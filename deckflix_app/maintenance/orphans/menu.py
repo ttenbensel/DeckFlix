@@ -2,6 +2,9 @@ from pathlib import Path
 
 from .scanner import scan_orphans
 from .detail import show_orphan_detail
+from .health_report import show_health_report
+from .plan_screen import show_cleanup_plan
+from .planner import create_orphan_cleanup_plan
 
 
 def show_list(
@@ -75,12 +78,14 @@ def show_orphan_menu(
             == "MIGRATION_LEFTOVER"
         ]
 
+
         release = [
             item
             for item in results
             if item.classification.value
             == "RELEASE_JUNK"
         ]
+
 
         orphan = [
             item
@@ -90,29 +95,18 @@ def show_orphan_menu(
         ]
 
 
-        print()
-
-        print(
-            "DECKFLIX MEDIA HEALTH"
+        plan = create_orphan_cleanup_plan(
+            results
         )
 
-        print(
-            "═════════════════════"
-        )
 
         print()
 
-        print(
-            f"Migration leftovers : {len(migration)}"
+        show_health_report(
+            source,
+            destination,
         )
 
-        print(
-            f"Release junk        : {len(release)}"
-        )
-
-        print(
-            f"Orphan movies       : {len(orphan)}"
-        )
 
         print()
 
@@ -129,6 +123,10 @@ def show_orphan_menu(
         )
 
         print(
+            "[P] View cleanup plan"
+        )
+
+        print(
             "[B] Back"
         )
 
@@ -141,12 +139,14 @@ def show_orphan_menu(
         if choice == "b":
             return
 
+
         elif choice == "m":
 
             show_list(
                 "MIGRATION LEFTOVERS",
                 migration,
             )
+
 
         elif choice == "r":
 
@@ -155,9 +155,17 @@ def show_orphan_menu(
                 release,
             )
 
+
         elif choice == "o":
 
             show_list(
                 "ORPHAN MOVIES",
                 orphan,
+            )
+
+
+        elif choice == "p":
+
+            show_cleanup_plan(
+                plan
             )
