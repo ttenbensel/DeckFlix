@@ -1,8 +1,17 @@
 from pathlib import Path
 
 from .duplicate_scanner import scan_duplicates
+
 from deckflix_app.maintenance.decisions.screen import (
     show_decision_screen,
+)
+
+from deckflix_app.maintenance.upgrades.bridge import (
+    create_upgrade_from_quality,
+)
+
+from deckflix_app.maintenance.upgrades.screen import (
+    show_upgrade_review,
 )
 
 
@@ -181,6 +190,14 @@ def show_quality_detail(
             "[D] Make decision"
         )
 
+
+        if item.classification.value == "SOURCE_BETTER":
+
+            print(
+                "[U] Create upgrade"
+            )
+
+
         print(
             "[B] Back"
         )
@@ -209,6 +226,26 @@ def show_quality_detail(
             )
 
 
+        elif (
+            choice == "u"
+            and item.classification.value
+            == "SOURCE_BETTER"
+        ):
+
+            upgrade = create_upgrade_from_quality(
+                item
+            )
+
+            show_upgrade_review(
+                upgrade,
+                Path(
+                    "/data/library1/"
+                    "deckflix-logs/"
+                    "upgrades/"
+                    "upgrade-history.json"
+                ),
+            )
+
 
 def show_quality_list(
     title,
@@ -219,7 +256,9 @@ def show_quality_list(
 
         print()
 
-        print(title)
+        print(
+            title
+        )
 
         print(
             "─────────────"
@@ -275,7 +314,6 @@ def show_quality_list(
                 show_quality_detail(
                     items[number - 1]
                 )
-
 
 
 def show_quality_review(
