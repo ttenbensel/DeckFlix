@@ -1,186 +1,212 @@
 from pathlib import Path
 
 from .duplicate_scanner import scan_duplicates
+from deckflix_app.maintenance.decisions.screen import (
+    show_decision_screen,
+)
 
 
 def show_quality_detail(
     item,
 ):
 
-    print()
+    while True:
 
-    print(
-        "QUALITY DETAIL"
-    )
-
-    print(
-        "══════════════"
-    )
-
-    print()
-
-    print(
-        "MOVIE"
-    )
-
-    print(
-        "─────"
-    )
-
-    print(
-        f"{item.source.title}"
-    )
-
-    if item.source.year:
+        print()
 
         print(
-            f"Year: {item.source.year}"
+            "QUALITY DETAIL"
+        )
+
+        print(
+            "══════════════"
+        )
+
+        print()
+
+        print(
+            "MOVIE"
+        )
+
+        print(
+            "─────"
+        )
+
+        print(
+            item.source.title
+        )
+
+        if item.source.year:
+
+            print(
+                f"Year: {item.source.year}"
+            )
+
+
+        print()
+
+        print(
+            "SOURCE MEDIA"
+        )
+
+        print(
+            "────────────"
+        )
+
+        print(
+            "Path:"
+        )
+
+        print(
+            item.source.path
+        )
+
+        print()
+
+        print(
+            f"Resolution : "
+            f"{item.source.resolution or 'Unknown'}"
+        )
+
+        print(
+            f"Source     : "
+            f"{item.source.source or 'Unknown'}"
+        )
+
+        print(
+            f"Codec      : "
+            f"{item.source.video_codec or 'Unknown'}"
         )
 
 
-    print()
-
-    print(
-        "SOURCE MEDIA"
-    )
-
-    print(
-        "────────────"
-    )
-
-    print(
-        "Path:"
-    )
-
-    print(
-        item.source.path
-    )
-
-    print()
-
-    print(
-        f"Resolution : "
-        f"{item.source.resolution or 'Unknown'}"
-    )
-
-    print(
-        f"Source     : "
-        f"{item.source.source or 'Unknown'}"
-    )
-
-    print(
-        f"Codec      : "
-        f"{item.source.video_codec or 'Unknown'}"
-    )
-
-
-    print()
-
-    print(
-        "DESTINATION MEDIA"
-    )
-
-    print(
-        "─────────────────"
-    )
-
-    print(
-        "Path:"
-    )
-
-    print(
-        item.destination.path
-    )
-
-    print()
-
-    print(
-        f"Resolution : "
-        f"{item.destination.resolution or 'Unknown'}"
-    )
-
-    print(
-        f"Source     : "
-        f"{item.destination.source or 'Unknown'}"
-    )
-
-    print(
-        f"Codec      : "
-        f"{item.destination.video_codec or 'Unknown'}"
-    )
-
-
-    print()
-
-    print(
-        "CLASSIFICATION"
-    )
-
-    print(
-        "──────────────"
-    )
-
-    print(
-        item.classification.value
-    )
-
-
-    print()
-
-    print(
-        "REASON"
-    )
-
-    print(
-        "──────"
-    )
-
-    print(
-        item.reason
-    )
-
-
-    print()
-
-    print(
-        "RECOMMENDATION"
-    )
-
-    print(
-        "──────────────"
-    )
-
-
-    if item.classification.value == "SOURCE_BETTER":
+        print()
 
         print(
-            "Upgrade destination copy"
+            "DESTINATION MEDIA"
         )
 
-    elif item.classification.value == "DUPLICATE_MEDIA":
-
         print(
-            "Review duplicate copies"
+            "─────────────────"
         )
 
-    else:
+        print(
+            "Path:"
+        )
 
         print(
-            "Manual quality review required"
+            item.destination.path
+        )
+
+        print()
+
+        print(
+            f"Resolution : "
+            f"{item.destination.resolution or 'Unknown'}"
+        )
+
+        print(
+            f"Source     : "
+            f"{item.destination.source or 'Unknown'}"
+        )
+
+        print(
+            f"Codec      : "
+            f"{item.destination.video_codec or 'Unknown'}"
         )
 
 
-    print()
+        print()
 
-    print(
-        "No automatic action taken"
-    )
+        print(
+            "CLASSIFICATION"
+        )
 
-    print()
+        print(
+            "──────────────"
+        )
 
-    input(
-        "Press Enter to continue..."
-    )
+        print(
+            item.classification.value
+        )
+
+
+        print()
+
+        print(
+            "REASON"
+        )
+
+        print(
+            "──────"
+        )
+
+        print(
+            item.reason
+        )
+
+
+        print()
+
+        print(
+            "RECOMMENDATION"
+        )
+
+        print(
+            "──────────────"
+        )
+
+
+        if item.classification.value == "SOURCE_BETTER":
+
+            print(
+                "Upgrade destination copy"
+            )
+
+        elif item.classification.value == "DUPLICATE_MEDIA":
+
+            print(
+                "Review duplicate copies"
+            )
+
+        else:
+
+            print(
+                "Manual quality review required"
+            )
+
+
+        print()
+
+        print(
+            "[D] Make decision"
+        )
+
+        print(
+            "[B] Back"
+        )
+
+
+        choice = input(
+            "Select option: "
+        ).strip().lower()
+
+
+        if choice == "b":
+
+            return
+
+
+        elif choice == "d":
+
+            show_decision_screen(
+                item,
+                Path(
+                    "/data/library1/"
+                    "deckflix-logs/"
+                    "decisions/"
+                    "quality-decisions.json"
+                ),
+            )
 
 
 
