@@ -5,6 +5,7 @@ from .detail import show_orphan_detail
 from .health_report import show_health_report
 from .plan_screen import show_cleanup_plan
 from .planner import create_orphan_cleanup_plan
+from .quality_screen import show_quality_review
 
 
 def show_list(
@@ -22,13 +23,22 @@ def show_list(
             "─────────────"
         )
 
-        for index, item in enumerate(
-            items,
-            start=1,
-        ):
+        if not items:
+
             print(
-                f"{index}. {item.path.name}"
+                "No items found"
             )
+
+        else:
+
+            for index, item in enumerate(
+                items,
+                start=1,
+            ):
+                print(
+                    f"{index}. {item.path.name}"
+                )
+
 
         print()
 
@@ -127,6 +137,10 @@ def show_orphan_menu(
         )
 
         print(
+            "[Q] View quality review"
+        )
+
+        print(
             "[B] Back"
         )
 
@@ -168,4 +182,12 @@ def show_orphan_menu(
 
             show_cleanup_plan(
                 plan
+            )
+
+
+        elif choice == "q":
+
+            show_quality_review(
+                source,
+                destination,
             )
