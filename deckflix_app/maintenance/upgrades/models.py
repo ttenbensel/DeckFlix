@@ -10,6 +10,8 @@ class UpgradeType(str, Enum):
 class UpgradeStatus(str, Enum):
     PENDING = "PENDING"
     APPROVED = "APPROVED"
+    BACKUP = "BACKUP"
+    VERIFYING = "VERIFYING"
     EXECUTED = "EXECUTED"
     FAILED = "FAILED"
 
@@ -28,4 +30,3 @@ class UpgradeCandidate:
     status: UpgradeStatus = (
         UpgradeStatus.PENDING
     )
-
