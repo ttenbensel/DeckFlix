@@ -1,6 +1,12 @@
 from pathlib import Path
 import shutil
 
+from deckflix_app.config import load_config
+
+from deckflix_app.safety.guard import (
+    require_write_access,
+)
+
 from .journal import UpgradeJournal
 
 from .models import (
@@ -17,6 +23,13 @@ def execute_upgrade(
     upgrade: UpgradeCandidate,
     journal_path: Path,
 ) -> UpgradeCandidate:
+
+    config = load_config()
+
+    require_write_access(
+        config
+    )
+
 
     journal = UpgradeJournal.load(
         journal_path
