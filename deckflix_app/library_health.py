@@ -7,6 +7,7 @@ from deckflix_app.health import (
     size_gb,
 )
 from deckflix_app.library import (
+    DuplicateClassification,
     LibraryAudit,
     LibraryIssue,
     LibraryRepairPlan,
@@ -109,6 +110,65 @@ def _show_issue_entries(
     print("No files have been changed.")
 
 
+DUPLICATE_CLASSIFICATION_LABELS = {
+    DuplicateClassification.LEGACY_DUPLICATE:
+        "Legacy duplicate",
+    DuplicateClassification.LIKELY_EXACT_DUPLICATE:
+        "Likely exact duplicate",
+    DuplicateClassification.BETTER_QUALITY:
+        "Better quality available",
+    DuplicateClassification.QUALITY_VARIANT:
+        "Quality variant",
+    DuplicateClassification.POSSIBLE_FALSE_POSITIVE:
+        "Possible false positive",
+}
+
+
+DUPLICATE_CLASSIFICATION_REASONS = {
+    DuplicateClassification.LEGACY_DUPLICATE:
+        "The same media identity exists in both a primary "
+        "and a legacy library location.",
+    DuplicateClassification.LIKELY_EXACT_DUPLICATE:
+        "The files have the same media identity, matching "
+        "quality characteristics, and the same file size.",
+    DuplicateClassification.BETTER_QUALITY:
+        "One version has a uniquely higher quality score "
+        "with a known quality difference.",
+    DuplicateClassification.QUALITY_VARIANT:
+        "The files share the same media identity, but the "
+        "available metadata does not safely establish one "
+        "version as superior.",
+    DuplicateClassification.POSSIBLE_FALSE_POSITIVE:
+        "The duplicate identity may represent split-part "
+        "media rather than two independent copies.",
+}
+
+
+def _show_duplicate_classification_summary(
+    audit,
+):
+    counts = {
+        classification: 0
+        for classification in DuplicateClassification
+    }
+
+    for classification in (
+        audit.duplicate_classifications.values()
+    ):
+        counts[classification] += 1
+
+    print("Classification Summary")
+    print("──────────────────────")
+
+    for classification in DuplicateClassification:
+        print(
+            f"{DUPLICATE_CLASSIFICATION_LABELS[classification]:<28}"
+            f"{counts[classification]:>5}"
+        )
+
+    print()
+
+
 def _show_duplicate_groups(audit):
     print()
     print("Duplicate Candidates")
@@ -121,6 +181,13 @@ def _show_duplicate_groups(audit):
 
     if not groups:
         print("None found.")
+        print()
+        print("No files have been changed.")
+        return
+
+    _show_duplicate_classification_summary(
+        audit
+    )
 
     for number, (
         key,
@@ -142,28 +209,88 @@ def _show_duplicate_groups(audit):
                 f"E{key[3]:02d}"
             )
 
+        classification = (
+            audit.duplicate_classifications.get(
+                key
+            )
+        )
+
         print(
             f"{number:>4}. {title}"
         )
 
-        for entry in entries:
+        if classification is not None:
+            classification_label = (
+                DUPLICATE_CLASSIFICATION_LABELS.get(
+                    classification,
+                    classification.value,
+                )
+            )
+            classification_reason = (
+                DUPLICATE_CLASSIFICATION_REASONS.get(
+                    classification,
+                    "Operator review required.",
+                )
+            )
+
             print(
-                f"      "
-                f"[{entry.root.name}] "
+                f"      Classification: "
+                f"{classification_label}"
+            )
+            print(
+                f"      Code:           "
+                f"{classification.value}"
+            )
+            print(
+                f"      Reason:         "
+                f"{classification_reason}"
+            )
+
+        for entry in entries:
+            media = entry.media
+
+            print(
+                f"      [{entry.root.name}]"
+            )
+            print(
+                f"        Path:         "
                 f"{entry.relative_path}"
+            )
+            print(
+                f"        Size:         "
+                f"{_format_size(media.size)}"
+            )
+            print(
+                f"        Resolution:   "
+                f"{media.resolution or '-'}"
+            )
+            print(
+                f"        Source:       "
+                f"{media.source or '-'}"
+            )
+            print(
+                f"        Codec:        "
+                f"{media.video_codec or '-'}"
             )
 
         print()
 
-    if groups:
-        print(f"Groups: {len(groups)}")
-        print(
-            "Candidate files: "
-            f"{sum(len(group) for _, group in groups)}"
-        )
+    print(
+        f"Groups: {len(groups)}"
+    )
+    print(
+        "Candidate files: "
+        f"{sum(len(group) for _, group in groups)}"
+    )
 
     print()
-    print("No files have been changed.")
+    print("READ-ONLY")
+    print(
+        "Duplicate classification is informational only."
+    )
+    print(
+        "No files have been changed."
+    )
 
 
 def _show_summary(audit):

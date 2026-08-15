@@ -4,6 +4,7 @@ from .index import (
     media_key,
 )
 from .audit import (
+    DuplicateClassification,
     LibraryAudit,
     LibraryAuditEntry,
     LibraryAuditSummary,
@@ -25,6 +26,7 @@ __all__ = [
     "LibraryIndex",
     "MediaKey",
     "media_key",
+    "DuplicateClassification",
     "LibraryAudit",
     "LibraryAuditEntry",
     "LibraryAuditSummary",

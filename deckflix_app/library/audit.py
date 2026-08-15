@@ -1,5 +1,5 @@
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 import re
@@ -83,7 +83,7 @@ class LibraryAudit:
     duplicate_classifications: dict[
         MediaKey,
         DuplicateClassification,
-    ]
+    ] = field(default_factory=dict)
 
     @property
     def summary(self) -> LibraryAuditSummary:

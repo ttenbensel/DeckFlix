@@ -3,6 +3,7 @@ from pathlib import Path
 import deckflix_app.library_health as ui
 
 from deckflix_app.library import (
+    DuplicateClassification,
     LibraryAudit,
     LibraryAuditEntry,
     LibraryIssue,
@@ -179,6 +180,96 @@ def test_issue_review_lists_path(
     )
 
 
+def test_duplicate_review_empty_is_read_only(
+    capsys,
+):
+    audit = LibraryAudit(
+        entries=[],
+        duplicate_groups={},
+    )
+
+    ui._show_duplicate_groups(
+        audit
+    )
+
+    output = (
+        capsys.readouterr().out
+    )
+
+    assert "Duplicate Candidates" in output
+    assert "None found." in output
+    assert "No files have been changed." in output
+
+
+def test_duplicate_review_shows_all_classifications(
+    tmp_path: Path,
+    capsys,
+):
+    entries = []
+    groups = {}
+    classifications = {}
+
+    values = list(
+        DuplicateClassification
+    )
+
+    for index, classification in enumerate(
+        values,
+        start=1,
+    ):
+        entry = make_entry(
+            tmp_path / str(index),
+            filename=(
+                f"Movie {index} (2020) 1080p.mkv"
+            ),
+            issues={
+                LibraryIssue.DUPLICATE_CANDIDATE,
+            },
+        )
+
+        key = (
+            "movie",
+            f"movie-{index}",
+            2020,
+        )
+
+        entries.append(entry)
+        groups[key] = (entry,)
+        classifications[key] = classification
+
+    audit = LibraryAudit(
+        entries=entries,
+        duplicate_groups=groups,
+        duplicate_classifications=classifications,
+    )
+
+    ui._show_duplicate_groups(
+        audit
+    )
+
+    output = (
+        capsys.readouterr().out
+    )
+
+    for classification in values:
+        assert (
+            classification.value
+            in output
+        )
+        assert (
+            ui.DUPLICATE_CLASSIFICATION_LABELS[
+                classification
+            ]
+            in output
+        )
+        assert (
+            ui.DUPLICATE_CLASSIFICATION_REASONS[
+                classification
+            ]
+            in output
+        )
+
+
 def test_duplicate_review_shows_group(
     tmp_path: Path,
     capsys,
@@ -224,6 +315,10 @@ def test_duplicate_review_shows_group(
                 second,
             )
         },
+        duplicate_classifications={
+            key:
+                DuplicateClassification.LEGACY_DUPLICATE,
+        },
     )
 
     ui._show_duplicate_groups(
@@ -235,10 +330,17 @@ def test_duplicate_review_shows_group(
     )
 
     assert "Duplicate Candidates" in output
+    assert "Classification Summary" in output
+    assert "Legacy duplicate" in output
+    assert "LEGACY_DUPLICATE" in output
     assert "Alien (1979)" in output
     assert "Primary Movies" in output
     assert "Legacy Movies" in output
+    assert "Reason:" in output
     assert "Groups: 1" in output
+    assert "Candidate files: 2" in output
+    assert "READ-ONLY" in output
+    assert "No files have been changed." in output
 
 
 def test_repair_plan_summary_shows_counts(
@@ -333,11 +435,11 @@ def test_repair_plan_back_returns(
     monkeypatch.setattr(
         ui,
         "build_library_repair_plan",
-        lambda audit: plan,
+        lambda audit, **kwargs: plan,
     )
 
     answers = iter(
-        ["4"]
+        ["5"]
     )
 
     monkeypatch.setattr(
