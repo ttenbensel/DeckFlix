@@ -1,5 +1,9 @@
 from pathlib import Path
 
+from deckflix_app.shuttle_mount import (
+    is_shuttle_mounted,
+)
+
 from deckflix_app.decision import ApprovalStatus
 from deckflix_app.operation import OperationManager, OperationState
 from deckflix_app.operating_modes import infer_operating_mode
@@ -142,7 +146,9 @@ def show_home_screen(
         if path.exists()
     )
 
-    shuttle_connected = shuttle.exists()
+    shuttle_connected = is_shuttle_mounted(
+        shuttle
+    )
     shuttle_label = shuttle.name.upper()
 
     print(

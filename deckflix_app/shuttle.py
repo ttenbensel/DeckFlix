@@ -3,6 +3,9 @@ import shutil
 
 from deckflix_app.scanner import scan_videos
 from deckflix_app.media import inspect_media
+from deckflix_app.shuttle_mount import (
+    is_shuttle_mounted,
+)
 
 
 def get_storage_info(path):
@@ -30,7 +33,7 @@ def scan_shuttle(shuttle_path):
     shuttle = Path(shuttle_path)
     storage = get_storage_info(shuttle)
 
-    if not shuttle.exists():
+    if not is_shuttle_mounted(shuttle):
         return {
             "connected": False,
             "path": shuttle,

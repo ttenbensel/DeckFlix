@@ -17,17 +17,47 @@ ACTION_LABELS = {
 }
 
 
-def media_name(item: DecisionQueueItem) -> str:
+def media_name(
+    item: DecisionQueueItem,
+) -> str:
     media = item.incoming
 
     if media.media_type == "tv":
-        return (
-            f"{media.title} "
-            f"S{media.season:02d}E{media.episode:02d}"
+        content_type = getattr(
+            media,
+            "content_type",
+            None,
         )
 
+        if content_type == "extra":
+            return (
+                f"{media.title} "
+                "[Extra]"
+            )
+
+        if content_type == "special":
+            return (
+                f"{media.title} "
+                "[Special]"
+            )
+
+        if (
+            media.season is not None
+            and media.episode is not None
+        ):
+            return (
+                f"{media.title} "
+                f"S{media.season:02d}"
+                f"E{media.episode:02d}"
+            )
+
+        return media.title
+
     if media.year:
-        return f"{media.title} ({media.year})"
+        return (
+            f"{media.title} "
+            f"({media.year})"
+        )
 
     return media.title
 
@@ -42,9 +72,14 @@ def show_decision_queue(
     print()
     print("Decision Queue")
     print("══════════════")
-    print("Read-only analysis. Nothing will be imported or changed.")
+    print(
+        "Read-only analysis. "
+        "Nothing will be imported or changed."
+    )
     print()
-    print("Scanning shuttle and libraries...")
+    print(
+        "Scanning shuttle and libraries..."
+    )
 
     queue = build_decision_queue_from_paths(
         shuttle_path=Path(shuttle_path),
@@ -63,12 +98,30 @@ def show_decision_queue(
     print()
     print("Summary")
     print("───────")
-    print(f"Files analysed      {queue.total}")
-    print(f"Import new          {summary[Action.NEW]}")
-    print(f"Quality upgrades    {summary[Action.UPGRADE]}")
-    print(f"Equivalent copies   {summary[Action.DUPLICATE]}")
-    print(f"Keep existing       {summary[Action.DOWNGRADE]}")
-    print(f"Needs review        {summary[Action.REVIEW]}")
+    print(
+        f"Files analysed      "
+        f"{queue.total}"
+    )
+    print(
+        f"Import new          "
+        f"{summary[Action.NEW]}"
+    )
+    print(
+        f"Quality upgrades    "
+        f"{summary[Action.UPGRADE]}"
+    )
+    print(
+        f"Equivalent copies   "
+        f"{summary[Action.DUPLICATE]}"
+    )
+    print(
+        f"Keep existing       "
+        f"{summary[Action.DOWNGRADE]}"
+    )
+    print(
+        f"Needs review        "
+        f"{summary[Action.REVIEW]}"
+    )
     print()
 
     print("Decisions")
@@ -83,34 +136,54 @@ def show_decision_queue(
         start=1,
     ):
         decision = item.decision
-        label = ACTION_LABELS[decision.action]
+        label = ACTION_LABELS[
+            decision.action
+        ]
 
-        print(f"{index:2}. [{label}] {media_name(item)}")
-        print(f"    Reason   : {decision.reason}")
         print(
-            f"    Incoming : {decision.incoming_score}"
+            f"{index:2}. "
+            f"[{label}] "
+            f"{media_name(item)}"
+        )
+        print(
+            f"    Reason   : "
+            f"{decision.reason}"
+        )
+        print(
+            f"    Incoming : "
+            f"{decision.incoming_score}"
         )
 
         if item.existing is not None:
             print(
-                f"    Existing : {decision.existing_score}"
+                f"    Existing : "
+                f"{decision.existing_score}"
             )
 
         print(
-            f"    Confidence: {decision.confidence}%"
+            f"    Confidence: "
+            f"{decision.confidence}%"
         )
         print()
 
-    remaining = queue.total - sample_limit
+    remaining = (
+        queue.total
+        - sample_limit
+    )
 
     if remaining > 0:
-        print(f"...and {remaining} more decisions.")
+        print(
+            f"...and {remaining} "
+            f"more decisions."
+        )
 
     print()
     print("Nothing has been changed.")
 
 
-def show_managed_decision_queue(manager) -> None:
+def show_managed_decision_queue(
+    manager,
+) -> None:
     print()
     print("Decision Queue")
     print("══════════════")
@@ -118,28 +191,57 @@ def show_managed_decision_queue(manager) -> None:
     if not manager.active:
         print()
         print("No operation is active.")
-        print("Begin a shuttle operation first.")
+        print(
+            "Begin a shuttle operation first."
+        )
         return
 
     if manager.decisions is None:
         print()
-        print("The active operation has no decisions.")
+        print(
+            "The active operation "
+            "has no decisions."
+        )
         return
 
     queue = manager.decisions
     summary = queue.summary()
 
     print()
-    print(f"Operation           {manager.operation.id}")
-    print(f"Files analysed      {queue.total}")
-    print(f"Import new          {summary[Action.NEW]}")
-    print(f"Quality upgrades    {summary[Action.UPGRADE]}")
-    print(f"Equivalent copies   {summary[Action.DUPLICATE]}")
-    print(f"Keep existing       {summary[Action.DOWNGRADE]}")
-    print(f"Needs review        {summary[Action.REVIEW]}")
+    print(
+        f"Operation           "
+        f"{manager.operation.id}"
+    )
+    print(
+        f"Files analysed      "
+        f"{queue.total}"
+    )
+    print(
+        f"Import new          "
+        f"{summary[Action.NEW]}"
+    )
+    print(
+        f"Quality upgrades    "
+        f"{summary[Action.UPGRADE]}"
+    )
+    print(
+        f"Equivalent copies   "
+        f"{summary[Action.DUPLICATE]}"
+    )
+    print(
+        f"Keep existing       "
+        f"{summary[Action.DOWNGRADE]}"
+    )
+    print(
+        f"Needs review        "
+        f"{summary[Action.REVIEW]}"
+    )
     print()
 
-    for index, item in enumerate(queue.items[:40], start=1):
+    for index, item in enumerate(
+        queue.items[:40],
+        start=1,
+    ):
         decision = item.decision
 
         print(
@@ -147,11 +249,18 @@ def show_managed_decision_queue(manager) -> None:
             f"[{ACTION_LABELS[decision.action]}] "
             f"{media_name(item)}"
         )
-        print(f"    Reason: {decision.reason}")
+        print(
+            f"    Reason: "
+            f"{decision.reason}"
+        )
         print()
 
     if queue.total > 40:
-        print(f"...and {queue.total - 40} more decisions.")
+        print(
+            f"...and "
+            f"{queue.total - 40} "
+            f"more decisions."
+        )
 
     print()
     print("Nothing has been changed.")

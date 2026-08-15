@@ -1,5 +1,6 @@
 from .operating_modes import show_operating_modes
 from .system_verification import show_system_verification
+from .ship_status import show_ship_status
 from .import_preflight import show_import_preflight
 from .operation_history import show_operation_history
 from .import_monitor import TerminalImportMonitor
@@ -13,9 +14,11 @@ from .decision_queue import (
 )
 from .parser_diagnostics import show_parser_diagnostics
 
+
 __all__ = [
     "show_operating_modes",
     "show_system_verification",
+    "show_ship_status",
     "show_import_preflight",
     "show_operation_history",
     "TerminalImportMonitor",

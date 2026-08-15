@@ -9,6 +9,7 @@ from deckflix_app.importer import (
     ShuttleCertificate,
     ShuttleSafetyChecker,
     delete_import_journal,
+    sha256,
 )
 
 from .history import (
@@ -36,6 +37,36 @@ def destination_for_media(
     filename = media.path.name
 
     if media.media_type == "tv":
+        content_type = getattr(
+            media,
+            "content_type",
+            None,
+        )
+
+        if content_type == "extra":
+            return (
+                Path(tv_library)
+                / media.title
+                / "Extras"
+                / filename
+            )
+
+        if content_type == "special":
+            return (
+                Path(tv_library)
+                / media.title
+                / "Specials"
+                / filename
+            )
+
+        if getattr(media, "content_type", None) == "special":
+            return (
+                Path(tv_library)
+                / media.title
+                / "Specials"
+                / filename
+            )
+
         if media.season is None:
             raise ValueError(
                 f"TV media has no season: {media.title}"
@@ -51,15 +82,25 @@ def destination_for_media(
     folder = media.title
 
     if media.year:
-        folder = f"{media.title} ({media.year})"
+        folder = (
+            f"{media.title} "
+            f"({media.year})"
+        )
 
-    return Path(movie_library) / folder / filename
+    return (
+        Path(movie_library)
+        / folder
+        / filename
+    )
 
 
 def approve_ready_items(
     manager: OperationManager,
 ) -> int:
-    operation = manager.require_operation()
+    operation = (
+        manager.require_operation()
+    )
+
     manager.require_valid_snapshot()
 
     if manager.approval_plan is None:
@@ -67,7 +108,10 @@ def approve_ready_items(
             "No approval plan is attached"
         )
 
-    if operation.state.value != "SNAPSHOT_READY":
+    if (
+        operation.state.value
+        != "SNAPSHOT_READY"
+    ):
         raise InvalidOperationTransition(
             f"Cannot approve items while state is "
             f"{operation.state.value}"
@@ -76,8 +120,14 @@ def approve_ready_items(
     approved = 0
 
     for item in manager.approval_plan.items:
-        if item.status is ApprovalStatus.READY:
-            item.status = ApprovalStatus.APPROVED
+        if (
+            item.status
+            is ApprovalStatus.READY
+        ):
+            item.status = (
+                ApprovalStatus.APPROVED
+            )
+
             approved += 1
 
     manager.approve()
@@ -101,14 +151,16 @@ def build_operation_import_queue(
 
     queue = ImportQueue()
 
-    for approval in manager.approval_plan.approved():
+    for approval in (
+        manager.approval_plan.approved()
+    ):
         item = approval.queue_item
         media = item.incoming
 
         if media.path is None:
             raise ValueError(
-                f"Approved media has no source path: "
-                f"{media.title}"
+                "Approved media has no source "
+                f"path: {media.title}"
             )
 
         destination = destination_for_media(
@@ -122,7 +174,8 @@ def build_operation_import_queue(
             and not allow_existing_destinations
         ):
             raise FileExistsError(
-                f"Destination already exists: {destination}"
+                "Destination already exists: "
+                f"{destination}"
             )
 
         queue.add(
@@ -136,6 +189,91 @@ def build_operation_import_queue(
     return queue
 
 
+def record_imported_jobs(
+    manager: OperationManager,
+    queue: ImportQueue,
+) -> int:
+    """
+    Record successfully imported and verified jobs in
+    the snapshot disposition ledger.
+
+    Call only after the import destination audit passes.
+    """
+    operation = (
+        manager.require_operation()
+    )
+
+    ledger = (
+        manager.require_ledger()
+    )
+
+    shuttle_path = (
+        operation.snapshot
+        .shuttle_path
+        .resolve()
+    )
+
+    recorded = 0
+
+    for job in queue.jobs:
+        if (
+            not job.copied
+            or not job.verified
+            or not job.completed
+        ):
+            raise InvalidOperationTransition(
+                "Cannot record an incomplete "
+                "import job in the snapshot ledger"
+            )
+
+        source = (
+            Path(job.source)
+            .resolve()
+        )
+
+        destination = (
+            Path(job.destination)
+            .resolve()
+        )
+
+        try:
+            relative_path = (
+                source.relative_to(
+                    shuttle_path
+                )
+            )
+
+        except ValueError as error:
+            raise InvalidOperationTransition(
+                "Imported source is outside "
+                "the operation shuttle: "
+                f"{source}"
+            ) from error
+
+        if not destination.exists():
+            raise InvalidOperationTransition(
+                "Cannot record imported media "
+                "because the destination is missing: "
+                f"{destination}"
+            )
+
+        destination_sha256 = (
+            sha256(
+                destination
+            )
+        )
+
+        ledger.mark_imported(
+            relative_path,
+            destination=destination,
+            sha256=destination_sha256,
+        )
+
+        recorded += 1
+
+    return recorded
+
+
 def execute_operation(
     manager: OperationManager,
     *,
@@ -147,22 +285,31 @@ def execute_operation(
     history_directory: Path | None = None,
     journal_path: Path | None = None,
 ) -> ShuttleCertificate | None:
-    operation = manager.require_operation()
+    operation = (
+        manager.require_operation()
+    )
 
     if read_only:
         return None
 
-    if operation.state.value != "APPROVED":
+    if (
+        operation.state.value
+        != "APPROVED"
+    ):
         raise InvalidOperationTransition(
-            f"Operation must be APPROVED before import; "
-            f"current state is {operation.state.value}"
+            "Operation must be APPROVED "
+            "before import; "
+            f"current state is "
+            f"{operation.state.value}"
         )
 
-    queue = build_operation_import_queue(
-        manager,
-        movie_library=movie_library,
-        tv_library=tv_library,
-        allow_existing_destinations=True,
+    queue = (
+        build_operation_import_queue(
+            manager,
+            movie_library=movie_library,
+            tv_library=tv_library,
+            allow_existing_destinations=True,
+        )
     )
 
     if not queue.jobs:
@@ -175,33 +322,65 @@ def execute_operation(
     active_journal_path = (
         Path(journal_path)
         if journal_path is not None
-        else Path(temp_dir) / "import-journal.json"
+        else (
+            Path(temp_dir)
+            / "import-journal.json"
+        )
     )
 
-    result = ResumableImportExecutor().execute(
-        operation_id=operation.id,
-        queue=queue,
-        temp_dir=Path(temp_dir),
-        journal_path=active_journal_path,
-        progress=progress,
-        delete_journal_when_complete=False,
+    result = (
+        ResumableImportExecutor()
+        .execute(
+            operation_id=operation.id,
+            queue=queue,
+            temp_dir=Path(temp_dir),
+            journal_path=active_journal_path,
+            progress=progress,
+            delete_journal_when_complete=False,
+        )
     )
 
-    safety = ShuttleSafetyChecker().check(
+    checker = (
+        ShuttleSafetyChecker()
+    )
+
+    safety = checker.check(
         queue=queue,
         import_result=result,
-        shuttle_path=operation.snapshot.shuttle_path,
+        shuttle_path=(
+            operation.snapshot.shuttle_path
+        ),
         temp_dir=Path(temp_dir),
         ignored_temp_paths={
             active_journal_path,
         },
     )
 
-    certificate = ShuttleCertificate(
-        shuttle_path=operation.snapshot.shuttle_path,
-        import_result=result,
-        safety=safety,
-        created_at=datetime.now(),
+    # Only successful, fully audited imports are
+    # allowed to become ledger evidence.
+    if safety.safe:
+        record_imported_jobs(
+            manager,
+            queue,
+        )
+
+    # Operation-based SAFE TO EMPTY requires complete
+    # coverage of the immutable shuttle snapshot.
+    checker.apply_snapshot_coverage(
+        safety,
+        ledger=manager.require_ledger(),
+        required=True,
+    )
+
+    certificate = (
+        ShuttleCertificate(
+            shuttle_path=(
+                operation.snapshot.shuttle_path
+            ),
+            import_result=result,
+            safety=safety,
+            created_at=datetime.now(),
+        )
     )
 
     if safety.safe:
@@ -214,16 +393,32 @@ def execute_operation(
             certificate=certificate,
         )
 
-        if history_directory is not None:
-            record = record_from_manager(manager)
+        if (
+            history_directory
+            is not None
+        ):
+            record = (
+                record_from_manager(
+                    manager
+                )
+            )
+
             save_history_record(
                 record,
-                Path(history_directory),
+                Path(
+                    history_directory
+                ),
             )
 
     else:
         manager.pause_import()
-        manager.import_result = result
-        manager.certificate = certificate
+
+        manager.import_result = (
+            result
+        )
+
+        manager.certificate = (
+            certificate
+        )
 
     return certificate

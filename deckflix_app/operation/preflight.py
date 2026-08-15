@@ -117,7 +117,6 @@ def _completed_destinations(
     }
 
 
-
 def _source_matches_snapshot(
     source: Path,
     *,
@@ -283,6 +282,14 @@ def run_import_preflight(
             result.errors.append(
                 f"{source}: {exc}"
             )
+            continue
+
+        # A COMPLETED journal entry represents media that has
+        # already been successfully imported and verified.
+        # It must remain subject to snapshot/source validation
+        # above, but must not consume additional destination
+        # free-space budget during a resumed import.
+        if destination in completed_destinations:
             continue
 
         if media.media_type == "tv":

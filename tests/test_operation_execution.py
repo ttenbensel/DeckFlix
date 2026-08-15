@@ -4,13 +4,16 @@ import pytest
 
 from deckflix_app.decision import ApprovalStatus
 from deckflix_app.operation import (
+    InvalidOperationTransition,
     OperationManager,
     OperationState,
+    SnapshotDisposition,
     approve_ready_items,
     build_operation_import_queue,
     destination_for_media,
     execute_operation,
     prepare_operation,
+    record_imported_jobs,
 )
 
 
@@ -28,6 +31,7 @@ def prepare_new_movie(tmp_path: Path):
         / "Alien (1979)"
         / "Alien.1979.1080p.BluRay.HEVC.mkv"
     )
+
     source.parent.mkdir()
     source.write_bytes(b"alien media")
 
@@ -51,6 +55,7 @@ def test_approve_ready_items(tmp_path: Path):
 
     assert approved == 1
     assert manager.state is OperationState.APPROVED
+
     assert (
         manager.approval_plan.count(
             ApprovalStatus.APPROVED
@@ -65,6 +70,7 @@ def test_build_queue_from_approved_operation(
     manager, source, movies, tv = prepare_new_movie(
         tmp_path
     )
+
     approve_ready_items(manager)
 
     queue = build_operation_import_queue(
@@ -75,6 +81,7 @@ def test_build_queue_from_approved_operation(
 
     assert len(queue.jobs) == 1
     assert queue.jobs[0].source == source
+
     assert queue.jobs[0].destination == (
         movies
         / "Alien (1979)"
@@ -88,6 +95,7 @@ def test_read_only_execution_changes_nothing(
     manager, source, movies, tv = prepare_new_movie(
         tmp_path
     )
+
     approve_ready_items(manager)
     manager.authorize_import()
 
@@ -105,10 +113,13 @@ def test_read_only_execution_changes_nothing(
     assert list(movies.rglob("*.mkv")) == []
 
 
-def test_execute_approved_operation(tmp_path: Path):
+def test_execute_approved_operation_records_ledger(
+    tmp_path: Path,
+):
     manager, source, movies, tv = prepare_new_movie(
         tmp_path
     )
+
     approve_ready_items(manager)
     manager.authorize_import()
 
@@ -132,9 +143,90 @@ def test_execute_approved_operation(tmp_path: Path):
     assert manager.state is OperationState.COMPLETE
     assert manager.import_result.completed == 1
 
+    relative = source.relative_to(
+        manager.operation.snapshot.shuttle_path
+    )
 
-def test_destination_for_tv_episode(tmp_path: Path):
-    manager, _, movies, tv = prepare_new_movie(tmp_path)
+    entry = manager.require_ledger().get(relative)
+
+    assert entry is not None
+
+    assert (
+        entry.disposition
+        is SnapshotDisposition.IMPORTED
+    )
+
+    assert entry.evidence_path == destination.resolve()
+    assert entry.sha256 is not None
+    assert len(entry.sha256) == 64
+
+    assert manager.require_ledger().accounted_files == 1
+    assert manager.require_ledger().unresolved_files == 0
+
+
+def test_record_imported_jobs_rejects_incomplete_job(
+    tmp_path: Path,
+):
+    manager, _, movies, tv = prepare_new_movie(
+        tmp_path
+    )
+
+    approve_ready_items(manager)
+
+    queue = build_operation_import_queue(
+        manager,
+        movie_library=movies,
+        tv_library=tv,
+    )
+
+    with pytest.raises(
+        InvalidOperationTransition,
+        match="incomplete import job",
+    ):
+        record_imported_jobs(
+            manager,
+            queue,
+        )
+
+
+def test_record_imported_jobs_rejects_missing_destination(
+    tmp_path: Path,
+):
+    manager, _, movies, tv = prepare_new_movie(
+        tmp_path
+    )
+
+    approve_ready_items(manager)
+
+    queue = build_operation_import_queue(
+        manager,
+        movie_library=movies,
+        tv_library=tv,
+    )
+
+    job = queue.jobs[0]
+
+    job.copied = True
+    job.verified = True
+    job.completed = True
+
+    with pytest.raises(
+        InvalidOperationTransition,
+        match="destination is missing",
+    ):
+        record_imported_jobs(
+            manager,
+            queue,
+        )
+
+
+def test_destination_for_tv_episode(
+    tmp_path: Path,
+):
+    manager, _, movies, tv = prepare_new_movie(
+        tmp_path
+    )
+
     media = manager.decisions.items[0].incoming
 
     media.media_type = "tv"
@@ -149,5 +241,7 @@ def test_destination_for_tv_episode(tmp_path: Path):
     )
 
     assert destination.parent == (
-        tv / "1883" / "Season 01"
+        tv
+        / "1883"
+        / "Season 01"
     )

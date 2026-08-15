@@ -31,6 +31,7 @@ def make_config(
         tv_libraries=(Path("/data/library2/tv"),),
         report_directory=Path("/data/library1/deckflix-logs"),
             import_staging_directory=Path("/data/library1/deckflix-staging"),
+review_hold_directory=Path("/data/library1/deckflix-review-hold"),
         paths=DeckFlixPaths(
             quarantine=Path("/data/library1/deckflix-quarantine"),
             repair_log=Path("/data/library1/deckflix-logs/repair.log"),

@@ -4,6 +4,9 @@ from pathlib import Path
 from uuid import uuid4
 
 from deckflix_app.scanner import scan_videos
+from deckflix_app.shuttle_mount import (
+    is_shuttle_mounted,
+)
 
 from .models import (
     Operation,
@@ -68,6 +71,13 @@ def create_shuttle_snapshot(
             f"Shuttle path is not a directory: {shuttle_path}"
         )
 
+    if not is_shuttle_mounted(shuttle_path):
+        raise RuntimeError(
+            "Shuttle is not mounted at "
+            f"{shuttle_path}. Refusing to snapshot "
+            "the mount directory."
+        )
+
     files = _snapshot_files(shuttle_path)
     timestamp = created_at or datetime.now()
 
@@ -112,6 +122,9 @@ def snapshot_matches_current(
     path = snapshot.shuttle_path
 
     if not path.exists() or not path.is_dir():
+        return False
+
+    if not is_shuttle_mounted(path):
         return False
 
     if path.stat().st_dev != snapshot.device_id:

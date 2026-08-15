@@ -11,6 +11,8 @@ def make_config(
     tmp_path: Path,
     *,
     read_only: bool = True,
+    operating_profile: str = "ship_offline",
+    low_impact: bool = True,
 ):
     shuttle = tmp_path / "shuttle"
     movies = tmp_path / "movies"
@@ -27,13 +29,17 @@ def make_config(
         tv_libraries=[tv],
         report_directory=reports,
         read_only=read_only,
+        operating_profile=operating_profile,
+        low_impact=low_impact,
     )
 
 
 def test_system_verification_passes(
     tmp_path: Path,
 ):
-    config = make_config(tmp_path)
+    config = make_config(
+        tmp_path
+    )
 
     result = run_system_verification(
         config=config,
@@ -43,14 +49,21 @@ def test_system_verification_passes(
 
     assert result.ready is True
     assert result.failed == 0
-    assert result.passed == len(result.checks)
+    assert result.passed == len(
+        result.checks
+    )
 
 
 def test_system_verification_reports_missing_shuttle(
     tmp_path: Path,
 ):
-    config = make_config(tmp_path)
-    Path(config.shuttle).rmdir()
+    config = make_config(
+        tmp_path
+    )
+
+    Path(
+        config.shuttle
+    ).rmdir()
 
     result = run_system_verification(
         config=config,
@@ -59,6 +72,7 @@ def test_system_verification_reports_missing_shuttle(
     )
 
     assert result.ready is False
+
     assert any(
         check.name == "Shuttle path"
         and check.passed is False
@@ -81,6 +95,7 @@ def test_system_verification_requires_safe_mode(
     )
 
     assert result.ready is False
+
     assert any(
         check.name == "Library Protection"
         and check.passed is False

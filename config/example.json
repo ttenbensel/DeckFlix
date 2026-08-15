@@ -18,5 +18,7 @@
     "allow_jellyfin_refresh": true
   },
   "quarantine_directory": "/data/library1/deckflix-quarantine",
-  "repair_log": "/data/library1/deckflix-logs/repair.log"
+  "repair_log": "/data/library1/deckflix-logs/repair.log",
+  "review_hold_directory": "/data/library1/deckflix-review-hold",
+  "import_staging_directory": "/data/library1/deckflix-staging"
 }

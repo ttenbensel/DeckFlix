@@ -3,9 +3,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from deckflix_app.library import LibraryIndex
-from deckflix_app.media import MediaInfo, inspect_media
+from deckflix_app.library.index import media_key
+from deckflix_app.media import MediaInfo
 from deckflix_app.metadata.models import MediaMetadata
-from deckflix_app.scanner import scan_videos
+from deckflix_app.quality import quality_score
+from deckflix_app.scanner import metadata_from_file, scan_videos
 
 from .actions import Action
 from .engine import decide
@@ -59,6 +61,11 @@ def metadata_from_media_info(
     return MediaMetadata(
         media_type=media.media_type,
         title=media.title,
+        content_type=(
+            "episode"
+            if media.media_type == "tv"
+            else "movie"
+        ),
         year=media.year,
         season=media.season,
         episode=media.episode,
@@ -83,11 +90,64 @@ def metadata_from_media_info(
     )
 
 
-def scan_metadata(path: Path) -> list[MediaMetadata]:
+def scan_metadata(
+    path: Path,
+) -> list[MediaMetadata]:
+    """
+    Scan a media root using DeckFlix's canonical metadata parser.
+
+    metadata_from_file() is deliberately used here rather than
+    rebuilding metadata from inspect_media(). This keeps the
+    decision queue aligned with the scanner's canonical handling
+    of contextual TV media, Extras, special episodes, and movie
+    filename parsing.
+    """
     return [
-        metadata_from_media_info(inspect_media(file))
+        metadata_from_file(file)
         for file in scan_videos(path)
     ]
+
+
+def _deduplicate_incoming(
+    incoming: list[MediaMetadata],
+) -> list[MediaMetadata]:
+    """
+    Collapse multiple shuttle files representing the same logical
+    media item into one candidate.
+
+    The logical identity is the same identity used by LibraryIndex:
+      - TV: title + season + episode
+      - Movies: title + year
+
+    When multiple incoming files have the same logical identity,
+    retain the highest-quality candidate.
+
+    Equal-quality candidates retain the first occurrence. This keeps
+    the result deterministic with respect to the scanner's ordering
+    and avoids inventing a preference between equivalent releases.
+
+    No filesystem changes are performed.
+    """
+    selected: dict[
+        tuple,
+        MediaMetadata,
+    ] = {}
+
+    for media in incoming:
+        key = media_key(media)
+        current = selected.get(key)
+
+        if current is None:
+            selected[key] = media
+            continue
+
+        incoming_score = quality_score(media)
+        current_score = quality_score(current)
+
+        if incoming_score > current_score:
+            selected[key] = media
+
+    return list(selected.values())
 
 
 def build_decision_queue(
@@ -100,9 +160,13 @@ def build_decision_queue(
     for media in library:
         index.add(media)
 
+    deduplicated_incoming = _deduplicate_incoming(
+        incoming
+    )
+
     items = []
 
-    for media in incoming:
+    for media in deduplicated_incoming:
         existing = index.find(media)
 
         items.append(
@@ -127,7 +191,9 @@ def build_decision_queue_from_paths(
     library = []
 
     for path in [*movie_libraries, *tv_libraries]:
-        library.extend(scan_metadata(path))
+        library.extend(
+            scan_metadata(path)
+        )
 
     return build_decision_queue(
         incoming=incoming,

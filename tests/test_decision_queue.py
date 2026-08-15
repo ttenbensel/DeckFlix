@@ -82,6 +82,62 @@ def test_queue_does_not_match_different_episode():
     assert queue.items[0].decision.action is Action.NEW
 
 
+def test_incoming_duplicate_tv_episode_is_collapsed():
+    first = episode(
+        "South Park",
+        26,
+        2,
+        "720p",
+    )
+
+    second = episode(
+        "South Park",
+        26,
+        2,
+        "1080p",
+    )
+
+    queue = build_decision_queue(
+        incoming=[
+            first,
+            second,
+        ],
+        library=[],
+    )
+
+    assert queue.total == 1
+    assert queue.items[0].incoming is second
+    assert queue.items[0].decision.action is Action.NEW
+
+
+def test_incoming_duplicate_tv_episode_keeps_highest_quality():
+    low_quality = episode(
+        "South Park",
+        26,
+        2,
+        "720p",
+    )
+
+    high_quality = episode(
+        "South Park",
+        26,
+        2,
+        "1080p",
+    )
+
+    queue = build_decision_queue(
+        incoming=[
+            high_quality,
+            low_quality,
+        ],
+        library=[],
+    )
+
+    assert queue.total == 1
+    assert queue.items[0].incoming is high_quality
+    assert queue.items[0].decision.action is Action.NEW
+
+
 def test_media_info_conversion(tmp_path: Path):
     file = tmp_path / "movie.mkv"
     file.write_bytes(b"media")

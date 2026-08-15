@@ -6,6 +6,9 @@ import hashlib
 from pathlib import Path
 
 from deckflix_app.config import DeckFlixConfig
+from deckflix_app.shuttle_mount import (
+    is_shuttle_mounted,
+)
 from deckflix_app.inventory.models import (
     Drive,
     DriveRole,
@@ -91,7 +94,9 @@ class InventoryScanner:
                 label="Media Shuttle",
                 role=DriveRole.SHUTTLE,
                 mount_point=self.config.shuttle,
-                online=self.config.shuttle.exists(),
+                online=is_shuttle_mounted(
+                    self.config.shuttle
+                ),
             ),
         ]
 

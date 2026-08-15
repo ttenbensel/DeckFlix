@@ -2,6 +2,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+from .ledger import SnapshotLedger
 from .models import Operation, OperationState
 from .snapshot import (
     create_operation,
@@ -21,16 +22,19 @@ class OperationManager:
     """
     Own one DeckFlix shuttle operation.
 
-    This is the single in-memory source of truth for the current
-    snapshot, decisions, approval plan, import result, and certificate.
+    This is the single in-memory source of truth for the
+    current snapshot, decisions, approval plan, snapshot
+    disposition ledger, import result, and certificate.
     """
 
     def __init__(self) -> None:
         self.operation: Operation | None = None
         self.decisions: Any | None = None
         self.approval_plan: Any | None = None
+        self.ledger: SnapshotLedger | None = None
         self.import_result: Any | None = None
         self.certificate: Any | None = None
+        self.final_safety_certificate: Any | None = None
         self.import_authorized: bool = False
 
     @property
@@ -62,8 +66,14 @@ class OperationManager:
 
         self.decisions = None
         self.approval_plan = None
+
+        self.ledger = SnapshotLedger.from_snapshot(
+            self.operation.snapshot
+        )
+
         self.import_result = None
         self.certificate = None
+        self.final_safety_certificate = None
         self.import_authorized = False
 
         return self.operation
@@ -75,6 +85,16 @@ class OperationManager:
             )
 
         return self.operation
+
+    def require_ledger(self) -> SnapshotLedger:
+        self.require_operation()
+
+        if self.ledger is None:
+            raise InvalidOperationTransition(
+                "No snapshot disposition ledger is attached"
+            )
+
+        return self.ledger
 
     def validate_snapshot(self) -> bool:
         operation = self.require_operation()
@@ -94,7 +114,8 @@ class OperationManager:
     def require_valid_snapshot(self) -> None:
         if not self.validate_snapshot():
             raise OperationInvalidated(
-                "The shuttle no longer matches the operation snapshot"
+                "The shuttle no longer matches the "
+                "operation snapshot"
             )
 
     def attach_decisions(self, decisions: Any) -> None:
@@ -111,7 +132,10 @@ class OperationManager:
         self.require_valid_snapshot()
         self.decisions = decisions
 
-    def attach_approval_plan(self, approval_plan: Any) -> None:
+    def attach_approval_plan(
+        self,
+        approval_plan: Any,
+    ) -> None:
         operation = self.require_operation()
 
         if self.decisions is None:
@@ -119,7 +143,10 @@ class OperationManager:
                 "Decisions must be attached before approval"
             )
 
-        if operation.state is not OperationState.SNAPSHOT_READY:
+        if (
+            operation.state
+            is not OperationState.SNAPSHOT_READY
+        ):
             raise InvalidOperationTransition(
                 f"Cannot attach approval while state is "
                 f"{operation.state.value}"
@@ -136,7 +163,10 @@ class OperationManager:
                 "An approval plan must exist before approval"
             )
 
-        if operation.state is not OperationState.SNAPSHOT_READY:
+        if (
+            operation.state
+            is not OperationState.SNAPSHOT_READY
+        ):
             raise InvalidOperationTransition(
                 f"Cannot approve while state is "
                 f"{operation.state.value}"
@@ -152,7 +182,10 @@ class OperationManager:
     def authorize_import(self) -> None:
         operation = self.require_operation()
 
-        if operation.state is not OperationState.APPROVED:
+        if (
+            operation.state
+            is not OperationState.APPROVED
+        ):
             raise InvalidOperationTransition(
                 f"Cannot enable Import Mode while state is "
                 f"{operation.state.value}"
@@ -167,7 +200,10 @@ class OperationManager:
     def begin_import(self) -> None:
         operation = self.require_operation()
 
-        if operation.state is not OperationState.APPROVED:
+        if (
+            operation.state
+            is not OperationState.APPROVED
+        ):
             raise InvalidOperationTransition(
                 f"Cannot begin import while state is "
                 f"{operation.state.value}"
@@ -188,7 +224,10 @@ class OperationManager:
     def pause_import(self) -> None:
         operation = self.require_operation()
 
-        if operation.state is not OperationState.IMPORTING:
+        if (
+            operation.state
+            is not OperationState.IMPORTING
+        ):
             raise InvalidOperationTransition(
                 f"Cannot pause import while state is "
                 f"{operation.state.value}"
@@ -198,6 +237,7 @@ class OperationManager:
             operation,
             state=OperationState.APPROVED,
         )
+
         self.import_authorized = False
 
     def complete(
@@ -208,7 +248,10 @@ class OperationManager:
     ) -> None:
         operation = self.require_operation()
 
-        if operation.state is not OperationState.IMPORTING:
+        if (
+            operation.state
+            is not OperationState.IMPORTING
+        ):
             raise InvalidOperationTransition(
                 f"Cannot complete while state is "
                 f"{operation.state.value}"
@@ -221,12 +264,15 @@ class OperationManager:
             operation,
             state=OperationState.COMPLETE,
         )
+
         self.import_authorized = False
 
     def clear(self) -> None:
         self.operation = None
         self.decisions = None
         self.approval_plan = None
+        self.ledger = None
         self.import_result = None
         self.certificate = None
+        self.final_safety_certificate = None
         self.import_authorized = False

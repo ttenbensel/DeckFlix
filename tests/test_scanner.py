@@ -31,6 +31,7 @@ def make_config(tmp_path: Path) -> DeckFlixConfig:
         tv_libraries=(tv_library,),
         report_directory=logs,
             import_staging_directory=tmp_path / "deckflix-staging",
+review_hold_directory=tmp_path / "deckflix-review-hold",
         paths=DeckFlixPaths(
             quarantine=library_root / "deckflix-quarantine",
             repair_log=logs / "repair.log",

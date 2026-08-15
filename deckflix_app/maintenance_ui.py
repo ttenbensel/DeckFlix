@@ -40,10 +40,6 @@ def library_health(
         tv,
     )
 
-    input(
-        "\nPress Enter to return to the main menu..."
-    )
-
 
 def repair_preview(
     movies,
