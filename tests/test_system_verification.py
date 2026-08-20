@@ -101,3 +101,40 @@ def test_system_verification_requires_safe_mode(
         and check.passed is False
         for check in result.checks
     )
+
+def test_snapshot_verification_does_not_require_fake_mount(
+    tmp_path: Path,
+    monkeypatch,
+):
+    config = make_config(
+        tmp_path
+    )
+
+    def refuse_mount_check(path):
+        raise AssertionError(
+            "Snapshot engine self-test must not "
+            "invoke shuttle mount policy"
+        )
+
+    monkeypatch.setattr(
+        "deckflix_app.operation.snapshot."
+        "is_shuttle_mounted",
+        refuse_mount_check,
+    )
+
+    result = run_system_verification(
+        config=config,
+        operation_manager=OperationManager(),
+        temp_directory=tmp_path / "temp",
+    )
+
+    snapshot_check = next(
+        check
+        for check in result.checks
+        if check.name == "Snapshot engine"
+    )
+
+    assert snapshot_check.passed is True
+    assert "1 file" in snapshot_check.detail
+    assert "fingerprint" in snapshot_check.detail
+

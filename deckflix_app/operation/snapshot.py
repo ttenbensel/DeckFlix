@@ -16,15 +16,28 @@ from .models import (
 )
 
 
-def _snapshot_files(shuttle_path: Path) -> tuple[SnapshotFile, ...]:
+def snapshot_files(
+    root: Path,
+) -> tuple[SnapshotFile, ...]:
+    """
+    Build stable snapshot file records for a directory.
+
+    This function performs file enumeration only. It does not
+    decide whether the directory is an authorised shuttle mount.
+
+    Production shuttle snapshots must continue to use
+    create_shuttle_snapshot(), which enforces the real mount
+    safety boundary before calling this function.
+    """
+    root = Path(root).resolve()
     entries = []
 
-    for file in scan_videos(shuttle_path):
+    for file in scan_videos(root):
         stat = file.stat()
 
         entries.append(
             SnapshotFile(
-                relative_path=file.relative_to(shuttle_path),
+                relative_path=file.relative_to(root),
                 size=stat.st_size,
                 modified_ns=stat.st_mtime_ns,
             )
@@ -33,7 +46,11 @@ def _snapshot_files(shuttle_path: Path) -> tuple[SnapshotFile, ...]:
     return tuple(
         sorted(
             entries,
-            key=lambda item: item.relative_path.as_posix().casefold(),
+            key=lambda item: (
+                item.relative_path
+                .as_posix()
+                .casefold()
+            ),
         )
     )
 
@@ -78,7 +95,7 @@ def create_shuttle_snapshot(
             "the mount directory."
         )
 
-    files = _snapshot_files(shuttle_path)
+    files = snapshot_files(shuttle_path)
     timestamp = created_at or datetime.now()
 
     return ShuttleSnapshot(
@@ -130,7 +147,7 @@ def snapshot_matches_current(
     if path.stat().st_dev != snapshot.device_id:
         return False
 
-    current_files = _snapshot_files(path)
+    current_files = snapshot_files(path)
 
     return (
         snapshot_fingerprint(current_files)

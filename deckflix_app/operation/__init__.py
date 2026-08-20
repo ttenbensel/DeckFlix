@@ -83,6 +83,7 @@ from .models import (
 from .snapshot import (
     create_operation,
     create_shuttle_snapshot,
+    snapshot_files,
     snapshot_fingerprint,
     snapshot_matches_current,
 )
@@ -146,6 +147,7 @@ __all__ = [
     "SnapshotFile",
     "create_operation",
     "create_shuttle_snapshot",
+    "snapshot_files",
     "snapshot_fingerprint",
     "snapshot_matches_current",
 ]

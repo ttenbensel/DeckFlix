@@ -12,7 +12,8 @@ from deckflix_app.importer import (
 
 from deckflix_app.operation import (
     OperationManager,
-    create_shuttle_snapshot,
+    snapshot_files,
+    snapshot_fingerprint,
 )
 
 
@@ -161,26 +162,35 @@ def _snapshot_engine_check() -> VerificationCheck:
             )
 
 
-            snapshot = create_shuttle_snapshot(
+            files = snapshot_files(
                 root
+            )
+
+            fingerprint = snapshot_fingerprint(
+                files
+            )
+
+            total_bytes = sum(
+                item.size
+                for item in files
             )
 
 
             passed = (
-                snapshot.file_count == 1
-                and snapshot.total_bytes
+                len(files) == 1
+                and total_bytes
                 == len(
                     b"deckflix verification"
                 )
-                and len(snapshot.fingerprint)
+                and len(fingerprint)
                 == 64
             )
 
 
             detail = (
-                f"{snapshot.file_count} file, "
+                f"{len(files)} file, "
                 f"fingerprint "
-                f"{snapshot.fingerprint[:12]}..."
+                f"{fingerprint[:12]}..."
             )
 
 
