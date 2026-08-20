@@ -6,11 +6,12 @@ from deckflix_app.library import LibraryIndex
 from deckflix_app.library.index import media_key
 from deckflix_app.media import MediaInfo
 from deckflix_app.metadata.models import MediaMetadata
+from deckflix_app.metadata.probe import probe_media
 from deckflix_app.quality import quality_score
 from deckflix_app.scanner import metadata_from_file, scan_videos
 
 from .actions import Action
-from .engine import decide
+from .engine import decide, decide_with_technical
 from .models import Decision
 
 
@@ -126,6 +127,10 @@ def _deduplicate_incoming(
     the result deterministic with respect to the scanner's ordering
     and avoids inventing a preference between equivalent releases.
 
+    This remains filename-metadata based. Operational technical
+    verification is applied after this selection and does not alter
+    incoming deduplication behaviour.
+
     No filesystem changes are performed.
     """
     selected: dict[
@@ -155,6 +160,13 @@ def build_decision_queue(
     incoming: list[MediaMetadata],
     library: list[MediaMetadata],
 ) -> DecisionQueue:
+    """
+    Build a decision queue from already-parsed metadata.
+
+    This path is deliberately pure with respect to technical probing.
+    It is used by deterministic analysis and tests and preserves the
+    existing filename-derived decision behaviour.
+    """
     index = LibraryIndex()
 
     for media in library:
@@ -180,12 +192,82 @@ def build_decision_queue(
     return DecisionQueue(items=items)
 
 
+def _build_verified_decision_queue(
+    *,
+    incoming: list[MediaMetadata],
+    library: list[MediaMetadata],
+) -> DecisionQueue:
+    """
+    Build the operational decision queue using technical metadata
+    from the real files when paths are available.
+
+    ffprobe is read-only. Failed or unavailable probes are passed to
+    decide_with_technical(), whose enrichment seam preserves the
+    filename-derived decision when verified technical data cannot be
+    obtained.
+
+    Incoming deduplication intentionally remains filename-based.
+    """
+    index = LibraryIndex()
+
+    for media in library:
+        index.add(media)
+
+    deduplicated_incoming = _deduplicate_incoming(
+        incoming
+    )
+
+    items = []
+
+    for media in deduplicated_incoming:
+        existing = index.find(media)
+
+        incoming_technical = None
+        existing_technical = None
+
+        if media.path is not None:
+            incoming_technical = probe_media(
+                media.path
+            )
+
+        if (
+            existing is not None
+            and existing.path is not None
+        ):
+            existing_technical = probe_media(
+                existing.path
+            )
+
+        decision = decide_with_technical(
+            existing,
+            media,
+            existing_technical=existing_technical,
+            incoming_technical=incoming_technical,
+        )
+
+        items.append(
+            DecisionQueueItem(
+                incoming=media,
+                existing=existing,
+                decision=decision,
+            )
+        )
+
+    return DecisionQueue(items=items)
+
+
 def build_decision_queue_from_paths(
     *,
     shuttle_path: Path,
     movie_libraries: list[Path],
     tv_libraries: list[Path],
 ) -> DecisionQueue:
+    """
+    Build the operational queue from real filesystem roots.
+
+    Real-path queue construction owns technical probing. The pure
+    build_decision_queue() API remains probe-free.
+    """
     incoming = scan_metadata(shuttle_path)
 
     library = []
@@ -195,7 +277,7 @@ def build_decision_queue_from_paths(
             scan_metadata(path)
         )
 
-    return build_decision_queue(
+    return _build_verified_decision_queue(
         incoming=incoming,
         library=library,
     )

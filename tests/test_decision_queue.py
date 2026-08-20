@@ -179,3 +179,169 @@ def test_queue_summary():
 
     assert summary[Action.NEW] == 1
     assert summary[Action.DUPLICATE] == 1
+
+
+def test_metadata_queue_does_not_probe(monkeypatch):
+    import deckflix_app.decision.queue as queue_module
+
+    def forbidden_probe(path):
+        raise AssertionError(
+            f"pure metadata queue probed {path}"
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        forbidden_probe,
+    )
+
+    queue = build_decision_queue(
+        incoming=[
+            movie("Avatar", 2009, "1080p"),
+        ],
+        library=[
+            movie("Avatar", 2009, "720p"),
+        ],
+    )
+
+    assert (
+        queue.items[0].decision.action
+        is Action.UPGRADE
+    )
+
+
+def test_path_queue_uses_verified_quality(
+    tmp_path: Path,
+    monkeypatch,
+):
+    from deckflix_app.decision import (
+        build_decision_queue_from_paths,
+    )
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+        VideoStreamMetadata,
+    )
+
+    shuttle = tmp_path / "shuttle"
+    movies = tmp_path / "movies"
+    tv = tmp_path / "tv"
+
+    shuttle.mkdir()
+    movies.mkdir()
+    tv.mkdir()
+
+    incoming_file = (
+        shuttle
+        / "Avatar (2009) 720p BluRay HEVC.mkv"
+    )
+    existing_file = (
+        movies
+        / "Avatar (2009) 1080p BluRay HEVC.mkv"
+    )
+
+    incoming_file.write_bytes(b"incoming")
+    existing_file.write_bytes(b"existing")
+
+    def fake_probe(path):
+        path = Path(path)
+
+        if path == incoming_file:
+            return TechnicalMetadata(
+                path=path,
+                probe_ok=True,
+                primary_video=VideoStreamMetadata(
+                    index=0,
+                    width=3840,
+                    height=2160,
+                    codec="hevc",
+                ),
+            )
+
+        if path == existing_file:
+            return TechnicalMetadata(
+                path=path,
+                probe_ok=True,
+                primary_video=VideoStreamMetadata(
+                    index=0,
+                    width=1920,
+                    height=1080,
+                    codec="hevc",
+                ),
+            )
+
+        raise AssertionError(
+            f"unexpected probe path: {path}"
+        )
+
+    monkeypatch.setattr(
+        "deckflix_app.decision.queue.probe_media",
+        fake_probe,
+    )
+
+    queue = build_decision_queue_from_paths(
+        shuttle_path=shuttle,
+        movie_libraries=[movies],
+        tv_libraries=[tv],
+    )
+
+    assert queue.total == 1
+    assert (
+        queue.items[0].decision.action
+        is Action.UPGRADE
+    )
+
+
+def test_path_queue_failed_probe_falls_back(
+    tmp_path: Path,
+    monkeypatch,
+):
+    from deckflix_app.decision import (
+        build_decision_queue_from_paths,
+    )
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+    )
+
+    shuttle = tmp_path / "shuttle"
+    movies = tmp_path / "movies"
+    tv = tmp_path / "tv"
+
+    shuttle.mkdir()
+    movies.mkdir()
+    tv.mkdir()
+
+    incoming_file = (
+        shuttle
+        / "Avatar (2009) 720p BluRay HEVC.mkv"
+    )
+    existing_file = (
+        movies
+        / "Avatar (2009) 1080p BluRay HEVC.mkv"
+    )
+
+    incoming_file.write_bytes(b"incoming")
+    existing_file.write_bytes(b"existing")
+
+    def failed_probe(path):
+        return TechnicalMetadata(
+            path=Path(path),
+            probe_ok=False,
+            error="test probe failure",
+        )
+
+    monkeypatch.setattr(
+        "deckflix_app.decision.queue.probe_media",
+        failed_probe,
+    )
+
+    queue = build_decision_queue_from_paths(
+        shuttle_path=shuttle,
+        movie_libraries=[movies],
+        tv_libraries=[tv],
+    )
+
+    assert queue.total == 1
+    assert (
+        queue.items[0].decision.action
+        is Action.DOWNGRADE
+    )
