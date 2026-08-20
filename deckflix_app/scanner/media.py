@@ -4,6 +4,9 @@ from deckflix_app.media import (
     SPECIAL_X_PATTERN,
     inspect_media,
 )
+from deckflix_app.metadata.episode_catalog import (
+    resolve_title_only_episode,
+)
 from deckflix_app.metadata.models import (
     MediaMetadata,
 )
@@ -120,11 +123,6 @@ def _metadata_from_extra(
     if extras_index is None:
         return None
 
-    # We need:
-    #
-    #   Series / Release / Extras / file
-    #
-    # so the Extras directory must have at least two parents.
     if extras_index < 2:
         return None
 
@@ -169,17 +167,6 @@ def _metadata_from_special_filename(
 
     parse_filename() correctly identifies these as TV specials,
     but its title is derived from the complete filename prefix.
-    For example:
-
-        South.Park.S24E00.The.Pandemic.Special.mkv
-
-    would otherwise become:
-
-        South Park S24E00 The Pandemic
-
-    The series identity is the text before the SxxE00 marker:
-
-        South Park
 
     Specials deliberately retain no normal season/episode
     assignment. Their destination routing is handled separately
@@ -206,10 +193,12 @@ def _metadata_from_special_filename(
         ".",
         " ",
     )
+
     title = title.replace(
         "_",
         " ",
     )
+
     title = " ".join(
         title.split()
     ).strip()
@@ -233,37 +222,87 @@ def _metadata_from_special_filename(
     )
 
 
+def _metadata_from_title_catalog(
+    path: Path,
+    *,
+    inspected,
+) -> MediaMetadata | None:
+    """
+    Promote a title-only file to a TV episode only when a
+    trusted catalogue provides an exact identity.
+
+    The candidate title comes directly from the filename stem.
+
+    This is important because inspect_media() deliberately falls
+    back conservatively when a Season directory contains a file
+    with no numeric episode marker. Its fallback title therefore
+    must not be treated as the episode title.
+
+    Unknown titles remain unresolved rather than being guessed.
+    """
+    identity = resolve_title_only_episode(
+        path,
+        candidate_title=path.stem,
+    )
+
+    if identity is None:
+        return None
+
+    try:
+        size = path.stat().st_size
+    except OSError:
+        size = 0
+
+    return MediaMetadata(
+        media_type="tv",
+        title=identity.title,
+        content_type="episode",
+        year=None,
+        season=identity.season,
+        episode=identity.episode,
+        resolution=_known(
+            inspected.resolution
+        ),
+        source=_known(
+            inspected.source
+        ),
+        video_codec=_known(
+            inspected.codec
+        ),
+        container=(
+            path.suffix
+            .lstrip(".")
+            .lower()
+        ),
+        path=path,
+        size=size,
+    )
+
+
 def metadata_from_file(
     file: str | Path,
 ) -> MediaMetadata:
     """
-    Parse one existing library file using both DeckFlix
-    parser generations conservatively.
+    Parse one existing library file using DeckFlix's canonical,
+    conservative identity rules.
 
-    inspect_media() remains authoritative for:
-      - contextual TV detection,
-      - release-folder TV detection,
-      - legacy Part/Episode formats,
-      - S00 parent specials,
-      - special SxxXyy identities.
+    Resolution order:
 
-    Explicit TV Extras are handled before the legacy
-    series-specific Extras compatibility behaviour so that
-    import routing sees them as TV content.
+      1. explicit TV Extras;
+      2. contextual/legacy TV detection;
+      3. conservative SxxXyy handling;
+      4. trusted title-only episode catalogue;
+      5. legacy series-specific Extras compatibility;
+      6. filename parser;
+      7. explicit SxxE00 correction;
+      8. ordinary movie fallback.
 
-    Explicit SxxE00 specials are corrected after filename
-    parsing so their identity is the parent series rather
-    than the filename's episode-zero title.
-
-    parse_filename() is used to improve ordinary movie
-    title/year extraction and to recognise explicit SxxE00-style
-    episode filenames that inspect_media() intentionally treats
-    conservatively.
+    Trusted title resolution is exact and fail-closed. It never
+    uses directory ordering, fuzzy matching, or guessed episode
+    numbers.
     """
     path = Path(file)
 
-    # Handle Extras before inspect_media() can convert them
-    # into the legacy "Series Extras" movie representation.
     extra_metadata = _metadata_from_extra(
         path
     )
@@ -280,8 +319,6 @@ def metadata_from_file(
             inspected
         )
 
-    # Preserve inspect_media()'s deliberately special
-    # treatment of SxxXyy.
     if SPECIAL_X_PATTERN.search(
         path.stem
     ):
@@ -289,9 +326,16 @@ def metadata_from_file(
             inspected
         )
 
-    # Preserve series-specific Extras identities for any
-    # legacy cases not recognised by the directory-contextual
-    # extra detector.
+    title_catalog_metadata = (
+        _metadata_from_title_catalog(
+            path,
+            inspected=inspected,
+        )
+    )
+
+    if title_catalog_metadata is not None:
+        return title_catalog_metadata
+
     if (
         inspected.title
         .casefold()
@@ -307,8 +351,6 @@ def metadata_from_file(
         )
     )
 
-    # Correct explicit SxxE00 TV specials before the
-    # ordinary TV/movie fallback logic.
     special_metadata = (
         _metadata_from_special_filename(
             path,
@@ -319,18 +361,12 @@ def metadata_from_file(
     if special_metadata is not None:
         return special_metadata
 
-    # This catches explicit S24E00 and similar cases which
-    # the legacy parser intentionally excludes from its
-    # ordinary positive-episode detector.
     if (
         filename_metadata.media_type
         == "tv"
     ):
         return filename_metadata
 
-    # For ordinary movie files, filename parsing is generally
-    # more precise than deriving identity from the immediate
-    # parent directory.
     return filename_metadata
 
 
