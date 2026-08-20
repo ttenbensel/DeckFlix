@@ -1,5 +1,9 @@
 from pathlib import Path
 
+from deckflix_app.decision.queue import (
+    _deduplicate_incoming,
+)
+
 from deckflix_app.decision import (
     Action,
     build_decision_queue,
@@ -660,3 +664,110 @@ def test_verified_queue_still_probes_existing_match(
             existing_file.resolve(),
         ]
     )
+
+
+def test_incoming_tv_items_without_episode_identity_are_not_deduplicated():
+    first = MediaMetadata(
+        media_type="tv",
+        title="Rick and Morty",
+        content_type="extra",
+        season=None,
+        episode=None,
+        path=Path(
+            "/shuttle/Rick and Morty/Extras/"
+            "Behind The Scenes.mkv"
+        ),
+    )
+
+    second = MediaMetadata(
+        media_type="tv",
+        title="Rick and Morty",
+        content_type="extra",
+        season=None,
+        episode=None,
+        path=Path(
+            "/shuttle/Rick and Morty/Extras/"
+            "Deleted Scene.mkv"
+        ),
+    )
+
+    result = _deduplicate_incoming(
+        [first, second]
+    )
+
+    assert len(result) == 2
+    assert first in result
+    assert second in result
+
+
+def test_incoming_specials_without_episode_identity_are_not_deduplicated():
+    first = MediaMetadata(
+        media_type="tv",
+        title="South Park",
+        content_type="special",
+        season=None,
+        episode=None,
+        path=Path(
+            "/shuttle/South Park/Specials/"
+            "Pandemic Special.mkv"
+        ),
+    )
+
+    second = MediaMetadata(
+        media_type="tv",
+        title="South Park",
+        content_type="special",
+        season=None,
+        episode=None,
+        path=Path(
+            "/shuttle/South Park/Specials/"
+            "Post Covid.mkv"
+        ),
+    )
+
+    result = _deduplicate_incoming(
+        [first, second]
+    )
+
+    assert len(result) == 2
+    assert first in result
+    assert second in result
+
+
+def test_normal_tv_episode_deduplication_is_preserved():
+    lower = MediaMetadata(
+        media_type="tv",
+        title="South Park",
+        content_type="episode",
+        season=26,
+        episode=2,
+        resolution="720p",
+        source="HDTV",
+        video_codec="H264",
+        path=Path(
+            "/shuttle/South Park/"
+            "South.Park.S26E02.720p.HDTV.mkv"
+        ),
+    )
+
+    higher = MediaMetadata(
+        media_type="tv",
+        title="South Park",
+        content_type="episode",
+        season=26,
+        episode=2,
+        resolution="1080p",
+        source="WEB-DL",
+        video_codec="H264",
+        path=Path(
+            "/shuttle/South Park/"
+            "South.Park.S26E02.1080p.WEB-DL.mkv"
+        ),
+    )
+
+    result = _deduplicate_incoming(
+        [lower, higher]
+    )
+
+    assert len(result) == 1
+    assert result[0] is higher

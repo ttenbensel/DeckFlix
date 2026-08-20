@@ -138,7 +138,28 @@ def _deduplicate_incoming(
         MediaMetadata,
     ] = {}
 
+    passthrough: list[MediaMetadata] = []
+
     for media in incoming:
+        # TV content without a complete episode identity cannot be
+        # safely deduplicated by title alone.
+        #
+        # Extras and conservative specials intentionally use
+        # season=None / episode=None. Multiple such files from the
+        # same series are not necessarily duplicates of each other.
+        #
+        # Keep those files individually until DeckFlix has a stronger
+        # identity than title + unknown season/episode.
+        if (
+            media.media_type == "tv"
+            and (
+                media.season is None
+                or media.episode is None
+            )
+        ):
+            passthrough.append(media)
+            continue
+
         key = media_key(media)
         current = selected.get(key)
 
@@ -152,7 +173,10 @@ def _deduplicate_incoming(
         if incoming_score > current_score:
             selected[key] = media
 
-    return list(selected.values())
+    return [
+        *selected.values(),
+        *passthrough,
+    ]
 
 
 def build_decision_queue(
