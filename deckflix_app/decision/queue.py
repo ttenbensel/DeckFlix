@@ -219,6 +219,22 @@ def _build_verified_decision_queue(
 
     items = []
 
+    # Technical metadata is cached only for the lifetime of this
+    # queue build. This prevents repeated ffprobe reads of the same
+    # real file without creating persistent or potentially stale
+    # technical metadata.
+    probe_cache = {}
+
+    def probe_once(path: Path):
+        resolved = Path(path).resolve()
+
+        if resolved not in probe_cache:
+            probe_cache[resolved] = probe_media(
+                resolved
+            )
+
+        return probe_cache[resolved]
+
     for media in deduplicated_incoming:
         existing = index.find(media)
 
@@ -226,7 +242,7 @@ def _build_verified_decision_queue(
         existing_technical = None
 
         if media.path is not None:
-            incoming_technical = probe_media(
+            incoming_technical = probe_once(
                 media.path
             )
 
@@ -234,7 +250,7 @@ def _build_verified_decision_queue(
             existing is not None
             and existing.path is not None
         ):
-            existing_technical = probe_media(
+            existing_technical = probe_once(
                 existing.path
             )
 

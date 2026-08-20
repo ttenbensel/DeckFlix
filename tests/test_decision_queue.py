@@ -345,3 +345,139 @@ def test_path_queue_failed_probe_falls_back(
         queue.items[0].decision.action
         is Action.DOWNGRADE
     )
+
+
+def test_verified_queue_probes_same_path_once(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    A real file encountered more than once during one verified
+    queue build must be ffprobed only once.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+        VideoStreamMetadata,
+    )
+
+    shared_file = tmp_path / "Avatar (2009) 1080p BluRay HEVC.mkv"
+    shared_file.write_bytes(b"media")
+
+    incoming = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        year=2009,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=shared_file,
+    )
+
+    existing = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        year=2009,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=shared_file,
+    )
+
+    calls = []
+
+    def fake_probe(path):
+        path = Path(path)
+        calls.append(path)
+
+        return TechnicalMetadata(
+            path=path,
+            probe_ok=True,
+            primary_video=VideoStreamMetadata(
+                index=0,
+                width=1920,
+                height=1080,
+                codec="hevc",
+            ),
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        fake_probe,
+    )
+
+    queue = queue_module._build_verified_decision_queue(
+        incoming=[incoming],
+        library=[existing],
+    )
+
+    assert queue.total == 1
+    assert len(calls) == 1
+    assert calls[0] == shared_file.resolve()
+
+
+def test_verified_queue_caches_failed_probe(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    Failed probe results are also cached for the lifetime of a
+    queue build so the same broken/unprobeable file is not retried.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+    )
+
+    shared_file = tmp_path / "Avatar (2009) 1080p BluRay HEVC.mkv"
+    shared_file.write_bytes(b"media")
+
+    incoming = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        year=2009,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=shared_file,
+    )
+
+    existing = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        year=2009,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=shared_file,
+    )
+
+    calls = []
+
+    def failed_probe(path):
+        path = Path(path)
+        calls.append(path)
+
+        return TechnicalMetadata(
+            path=path,
+            probe_ok=False,
+            error="test probe failure",
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        failed_probe,
+    )
+
+    queue = queue_module._build_verified_decision_queue(
+        incoming=[incoming],
+        library=[existing],
+    )
+
+    assert queue.total == 1
+    assert len(calls) == 1
+    assert calls[0] == shared_file.resolve()
