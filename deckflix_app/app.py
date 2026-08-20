@@ -54,13 +54,10 @@ from deckflix_app.library import (
 from deckflix_app.maintenance.screen import (
     show_repair_preview,
 )
-
-from deckflix_app.maintenance_ui import (
-    system_verification,
-    library_health,
-    repair_preview,
-    maintenance_plans,
+from deckflix_app.maintenance.plans_screen import (
+    show_maintenance_plans,
 )
+
 
 from deckflix_app.operations_ui import (
     begin_operation,
@@ -184,7 +181,7 @@ def main():
                     break
 
         elif choice == "2":
-            library_health(
+            show_library_health(
                 MOVIES,
                 TV,
             )
@@ -230,7 +227,7 @@ def main():
                     )
 
                 elif sub == "4":
-                    maintenance_plans(
+                    show_maintenance_plans(
                         CONFIG.report_directory
                         / "maintenance"
                     )
@@ -316,9 +313,20 @@ def main():
                     )
 
                 elif sub == "2":
-                    system_verification(
+                    print()
+                    print(
+                        "Running DeckFlix system "
+                        "verification..."
+                    )
+
+                    run_system_verification(
                         config=CONFIG,
                         operation_manager=OPERATION_MANAGER,
+                        temp_directory=Path(
+                            str(
+                                CONFIG.import_staging_directory
+                            )
+                        ),
                     )
 
                 elif sub == "3":
