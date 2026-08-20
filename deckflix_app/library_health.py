@@ -316,6 +316,17 @@ def _show_duplicate_groups(audit):
                     f"{verified_codec}"
                 )
 
+            if preference is not None:
+                if entry_index == preference.index:
+                    recommendation = "KEEP"
+                else:
+                    recommendation = "REMOVE"
+
+                print(
+                    f"        Recommendation: "
+                    f"{recommendation}"
+                )
+
         if preference is not None:
             preferred_entry = entries[
                 preference.index

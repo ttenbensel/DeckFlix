@@ -650,3 +650,196 @@ def test_duplicate_review_hides_matching_verification(
     output = capsys.readouterr().out
 
     assert "Verified:" not in output
+
+
+def test_duplicate_display_recommends_keep_and_remove(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+):
+    first = make_entry(
+        tmp_path / "first",
+        filename=(
+            "Movie (2020) 480p.mkv"
+        ),
+        issues={
+            LibraryIssue.DUPLICATE_CANDIDATE,
+        },
+    )
+
+    second = make_entry(
+        tmp_path / "second",
+        filename=(
+            "Movie (2020) 1080p.mkv"
+        ),
+        issues={
+            LibraryIssue.DUPLICATE_CANDIDATE,
+        },
+    )
+
+    key = (
+        "movie",
+        "movie",
+        2020,
+        None,
+    )
+
+    audit = LibraryAudit(
+        entries=[
+            first,
+            second,
+        ],
+        duplicate_groups={
+            key: (
+                first,
+                second,
+            ),
+        },
+        duplicate_classifications={
+            key: (
+                DuplicateClassification
+                .QUALITY_VARIANT
+            ),
+        },
+    )
+
+    class Verification:
+        def __init__(
+            self,
+            resolution,
+            video_codec,
+        ):
+            self.resolution = resolution
+            self.video_codec = video_codec
+            self.changed = True
+
+    verifications = iter(
+        [
+            Verification(
+                "480p",
+                "h264",
+            ),
+            Verification(
+                "1080p",
+                "h264",
+            ),
+        ]
+    )
+
+    monkeypatch.setattr(
+        ui,
+        "verify_quality",
+        lambda media: next(
+            verifications
+        ),
+    )
+
+    class Preference:
+        index = 1
+        reason = (
+            "higher verified resolution"
+        )
+
+    monkeypatch.setattr(
+        ui,
+        "technical_preference",
+        lambda values: Preference(),
+    )
+
+    ui._show_duplicate_groups(
+        audit
+    )
+
+    output = capsys.readouterr().out
+
+    assert (
+        output.count(
+            "Recommendation: KEEP"
+        )
+        == 1
+    )
+
+    assert (
+        output.count(
+            "Recommendation: REMOVE"
+        )
+        == 1
+    )
+
+    assert (
+        "Preference reason:    "
+        "higher verified resolution"
+        in output
+    )
+
+
+def test_duplicate_display_has_no_recommendation_when_uncertain(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+):
+    first = make_entry(
+        tmp_path / "first",
+        filename=(
+            "Movie (2020) A.mkv"
+        ),
+        issues={
+            LibraryIssue.DUPLICATE_CANDIDATE,
+        },
+    )
+
+    second = make_entry(
+        tmp_path / "second",
+        filename=(
+            "Movie (2020) B.mkv"
+        ),
+        issues={
+            LibraryIssue.DUPLICATE_CANDIDATE,
+        },
+    )
+
+    key = (
+        "movie",
+        "movie",
+        2020,
+        None,
+    )
+
+    audit = LibraryAudit(
+        entries=[
+            first,
+            second,
+        ],
+        duplicate_groups={
+            key: (
+                first,
+                second,
+            ),
+        },
+        duplicate_classifications={
+            key: (
+                DuplicateClassification
+                .QUALITY_VARIANT
+            ),
+        },
+    )
+
+    monkeypatch.setattr(
+        ui,
+        "verify_quality",
+        lambda media: None,
+    )
+
+    monkeypatch.setattr(
+        ui,
+        "technical_preference",
+        lambda values: None,
+    )
+
+    ui._show_duplicate_groups(
+        audit
+    )
+
+    output = capsys.readouterr().out
+
+    assert "Recommendation:" not in output
