@@ -207,6 +207,9 @@ def _build_verified_decision_queue(
     obtained.
 
     Incoming deduplication intentionally remains filename-based.
+
+    NEW items are not technically probed because technical quality
+    cannot affect the absence of an existing library match.
     """
     index = LibraryIndex()
 
@@ -238,6 +241,25 @@ def _build_verified_decision_queue(
     for media in deduplicated_incoming:
         existing = index.find(media)
 
+        # Technical quality cannot change a NEW decision because
+        # there is no existing library copy to compare against.
+        #
+        # Avoiding ffprobe here is especially important for shuttle
+        # loads containing mostly new media.
+        if existing is None:
+            items.append(
+                DecisionQueueItem(
+                    incoming=media,
+                    existing=None,
+                    decision=decide(
+                        None,
+                        media,
+                    ),
+                )
+            )
+
+            continue
+
         incoming_technical = None
         existing_technical = None
 
@@ -246,10 +268,7 @@ def _build_verified_decision_queue(
                 media.path
             )
 
-        if (
-            existing is not None
-            and existing.path is not None
-        ):
+        if existing.path is not None:
             existing_technical = probe_once(
                 existing.path
             )

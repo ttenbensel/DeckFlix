@@ -481,3 +481,182 @@ def test_verified_queue_caches_failed_probe(
     assert queue.total == 1
     assert len(calls) == 1
     assert calls[0] == shared_file.resolve()
+
+
+def test_verified_queue_does_not_probe_new_media(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    Technical quality cannot affect a NEW decision, so a media file
+    with no matching library item must not be ffprobed.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    incoming_file = (
+        tmp_path
+        / "Alien (1979) 1080p BluRay HEVC.mkv"
+    )
+    incoming_file.write_bytes(
+        b"new media"
+    )
+
+    incoming = MediaMetadata(
+        media_type="movie",
+        title="Alien",
+        year=1979,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=incoming_file,
+    )
+
+    calls = []
+
+    def forbidden_probe(path):
+        calls.append(
+            Path(path)
+        )
+
+        raise AssertionError(
+            "NEW media must not be technically probed"
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        forbidden_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[
+                incoming,
+            ],
+            library=[],
+        )
+    )
+
+    assert queue.total == 1
+    assert (
+        queue.items[0].decision.action
+        is Action.NEW
+    )
+    assert calls == []
+
+
+def test_verified_queue_still_probes_existing_match(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    Existing-media comparisons still require technical verification.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+        VideoStreamMetadata,
+    )
+
+    incoming_file = (
+        tmp_path
+        / "Avatar (2009) 720p BluRay HEVC.mkv"
+    )
+    existing_file = (
+        tmp_path
+        / "Avatar (2009) 1080p BluRay HEVC existing.mkv"
+    )
+
+    incoming_file.write_bytes(
+        b"incoming"
+    )
+    existing_file.write_bytes(
+        b"existing"
+    )
+
+    incoming = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        year=2009,
+        resolution="720p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=incoming_file,
+    )
+
+    existing = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        year=2009,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=existing_file,
+    )
+
+    calls = []
+
+    def fake_probe(path):
+        resolved = Path(path).resolve()
+        calls.append(
+            resolved
+        )
+
+        width = (
+            3840
+            if resolved
+            == incoming_file.resolve()
+            else 1920
+        )
+
+        height = (
+            2160
+            if resolved
+            == incoming_file.resolve()
+            else 1080
+        )
+
+        return TechnicalMetadata(
+            path=resolved,
+            probe_ok=True,
+            primary_video=VideoStreamMetadata(
+                index=0,
+                width=width,
+                height=height,
+                codec="hevc",
+            ),
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        fake_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[
+                incoming,
+            ],
+            library=[
+                existing,
+            ],
+        )
+    )
+
+    assert queue.total == 1
+
+    assert (
+        queue.items[0].decision.action
+        is Action.UPGRADE
+    )
+
+    assert sorted(calls) == sorted(
+        [
+            incoming_file.resolve(),
+            existing_file.resolve(),
+        ]
+    )
