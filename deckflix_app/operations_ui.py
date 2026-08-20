@@ -834,27 +834,87 @@ def clear_operation(
         print("No operation is active.")
         return
 
-    operation = operation_manager.require_operation()
+    operation = (
+        operation_manager.require_operation()
+    )
+    ledger = (
+        operation_manager.require_ledger()
+    )
 
     print()
     print(f"Operation  {operation.id}")
     print(f"State      {operation.state.value}")
+    print(
+        f"Ledger     "
+        f"{ledger.accounted_files}/"
+        f"{ledger.total_files}"
+    )
+    print()
+
+    if operation.state.value == "IMPORTING":
+        print(
+            "Clear blocked: an import is currently "
+            "in progress."
+        )
+        print(
+            "Pause or safely complete the import "
+            "before clearing the operation."
+        )
+        return
+
+    if operation_manager.import_authorized:
+        print(
+            "Clear blocked: Import Mode is enabled."
+        )
+        print(
+            "Disable Import Mode before clearing "
+            "the operation."
+        )
+        return
+
+    if ledger.accounted_files != 0:
+        print(
+            "Clear blocked: the operation ledger "
+            "contains accounted files."
+        )
+        print(
+            "This operation may contain import or "
+            "disposition evidence and cannot be "
+            "discarded through the simple clear "
+            "workflow."
+        )
+        return
+
+    print(
+        "This will discard the current DeckFlix "
+        "operation record."
+    )
+    print(
+        "It will NOT modify shuttle files, library "
+        "media, or Jellyfin."
+    )
     print()
 
     answer = input(
-        "Discard this in-memory operation? (y/N): "
-    ).strip().lower()
+        "Type the operation ID to confirm: "
+    ).strip()
 
-    if answer != "y":
+    if answer != operation.id:
         print("Operation retained.")
         return
 
     operation_manager.clear()
+
     delete_saved_operation(
         operation_state_path
     )
 
+    print()
     print("Operation cleared.")
+    print(
+        "A fresh shuttle operation can now be "
+        "created."
+    )
 
 
 def approve_operation(
