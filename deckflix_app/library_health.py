@@ -23,6 +23,7 @@ from deckflix_app.library.repair_operation import (
     RepairOperationTransitionError,
 )
 from deckflix_app.metadata.quality_verification import (
+    technical_preference,
     verify_quality,
 )
 from deckflix_app.library.integrity import (
@@ -254,7 +255,18 @@ def _show_duplicate_groups(audit):
                 f"{classification_reason}"
             )
 
-        for entry in entries:
+        verifications = [
+            verify_quality(entry.media)
+            for entry in entries
+        ]
+
+        preference = technical_preference(
+            verifications
+        )
+
+        for entry_index, entry in enumerate(
+            entries
+        ):
             media = entry.media
 
             print(
@@ -281,9 +293,9 @@ def _show_duplicate_groups(audit):
                 f"{media.video_codec or '-'}"
             )
 
-            verification = verify_quality(
-                media
-            )
+            verification = verifications[
+                entry_index
+            ]
 
             if (
                 verification is not None
@@ -303,6 +315,20 @@ def _show_duplicate_groups(audit):
                     f"{verified_resolution} / "
                     f"{verified_codec}"
                 )
+
+        if preference is not None:
+            preferred_entry = entries[
+                preference.index
+            ]
+
+            print(
+                "      Technical preference: "
+                f"[{preferred_entry.root.name}]"
+            )
+            print(
+                "      Preference reason:    "
+                f"{preference.reason}"
+            )
 
         print()
 
