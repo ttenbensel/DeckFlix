@@ -22,6 +22,11 @@ from deckflix_app.library.repair_operation import (
     RepairOperationState,
     RepairOperationTransitionError,
 )
+from deckflix_app.library.integrity import (
+    MediaIntegrityStatus,
+    classify_media_integrity,
+)
+from deckflix_app.metadata.probe import probe_media
 
 
 ISSUE_LABELS = {
@@ -354,6 +359,117 @@ def _show_summary(audit):
 
     print()
     print("Read-only audit.")
+    print("No files have been changed.")
+
+
+def _show_media_integrity(
+    audit,
+):
+    """Run a simple read-only integrity check."""
+    total = len(audit.entries)
+
+    counts = {
+        status: 0
+        for status in MediaIntegrityStatus
+    }
+    problems = []
+
+    print()
+    print("Media Integrity")
+    print("═══════════════")
+    print()
+    print(f"Files to check: {total}")
+    print()
+    print("READ-ONLY")
+    print("No files will be changed.")
+    print()
+
+    for number, entry in enumerate(
+        audit.entries,
+        start=1,
+    ):
+        media = entry.media
+
+        if media.path is None:
+            continue
+
+        if (
+            number == 1
+            or number % 50 == 0
+            or number == total
+        ):
+            print(
+                f"Checking {number}/{total}"
+            )
+
+        technical = probe_media(
+            media.path
+        )
+        result = classify_media_integrity(
+            media,
+            technical,
+        )
+
+        counts[result.status] += 1
+
+        if result.status in {
+            MediaIntegrityStatus.CORRUPT,
+            MediaIntegrityStatus.SUSPICIOUS,
+        }:
+            problems.append(
+                (media, result)
+            )
+
+    print()
+    print("Results")
+    print("───────")
+    print(
+        "Healthy          "
+        f"{counts[MediaIntegrityStatus.HEALTHY]}"
+    )
+    print(
+        "Needs Review     "
+        f"{counts[MediaIntegrityStatus.SUSPICIOUS]}"
+    )
+    print(
+        "Bad Media        "
+        f"{counts[MediaIntegrityStatus.CORRUPT]}"
+    )
+    print(
+        "Ignored Extras   "
+        f"{counts[MediaIntegrityStatus.AUXILIARY]}"
+    )
+
+    print()
+    print("Problems")
+    print("────────")
+
+    if not problems:
+        print("None found.")
+    else:
+        for media, result in problems:
+            print()
+            print(_identity(media))
+
+            if (
+                result.status
+                == MediaIntegrityStatus.CORRUPT
+            ):
+                print("  Bad Media")
+            else:
+                print("  Needs Review")
+
+            print(
+                f"  {media.path}"
+            )
+
+            for reason in result.reasons:
+                print(
+                    f"  {reason}"
+                )
+
+    print()
+    print("READ-ONLY")
     print("No files have been changed.")
 
 
@@ -1539,8 +1655,9 @@ def show_library_health(
             f"5. Weak Metadata           "
             f"{summary.weak_metadata}"
         )
-        print("6. Repair Plan")
-        print("7. Back")
+        print("6. Media Integrity")
+        print("7. Repair Plan")
+        print("8. Back")
         print()
 
         choice = input(
@@ -1590,9 +1707,15 @@ def show_library_health(
             )
 
         elif choice == "6":
-            _show_repair_plan(audit)
+            _show_media_integrity(audit)
+            input(
+                "\nPress Enter to continue..."
+            )
 
         elif choice == "7":
+            _show_repair_plan(audit)
+
+        elif choice == "8":
             return
 
         else:

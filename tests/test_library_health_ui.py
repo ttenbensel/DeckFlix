@@ -489,8 +489,8 @@ def test_library_health_opens_repair_plan(
 
     answers = iter(
         [
-            "6",
             "7",
+            "8",
         ]
     )
 
@@ -529,7 +529,7 @@ def test_back_returns_without_changes(
     )
 
     answers = iter(
-        ["7"]
+        ["8"]
     )
 
     monkeypatch.setattr(
