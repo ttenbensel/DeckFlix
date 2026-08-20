@@ -16,6 +16,7 @@ def prepare_operation(
     movie_libraries: list[Path],
     tv_libraries: list[Path],
     operation_id: str | None = None,
+    progress=None,
 ) -> Operation:
     """
     Create one operation and attach its decisions and approval plan.
@@ -38,6 +39,7 @@ def prepare_operation(
             Path(path)
             for path in tv_libraries
         ],
+        progress=progress,
     )
 
     manager.attach_decisions(decisions)

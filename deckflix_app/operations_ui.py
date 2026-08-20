@@ -52,12 +52,53 @@ def begin_operation(
     print("Building decision queue...")
     print("Building approval plan...")
 
+    import time
+
+    progress_started = time.monotonic()
+    last_reported = 0
+
+    def show_build_progress(progress):
+        nonlocal last_reported
+
+        should_report = (
+            progress.completed == 1
+            or progress.completed - last_reported >= 25
+        )
+
+        if not should_report:
+            return
+
+        last_reported = progress.completed
+
+        elapsed = max(
+            time.monotonic() - progress_started,
+            0.001,
+        )
+
+        rate = (
+            progress.completed
+            / elapsed
+            * 60.0
+        )
+
+        print(
+            "  Verified probes: "
+            f"{progress.completed:5}  "
+            f"Elapsed: {elapsed / 60.0:6.1f}m  "
+            f"Rate: {rate:5.1f}/min"
+        )
+        print(
+            "  Current: "
+            f"{progress.current_file}"
+        )
+
     try:
         operation = prepare_operation(
             operation_manager,
             shuttle_path=shuttle,
             movie_libraries=config.movie_libraries,
             tv_libraries=config.tv_libraries,
+            progress=show_build_progress,
         )
 
     except (

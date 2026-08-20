@@ -1,5 +1,6 @@
 from collections import Counter
 from dataclasses import dataclass
+from typing import Callable
 from pathlib import Path
 
 from deckflix_app.library import LibraryIndex
@@ -16,6 +17,18 @@ from deckflix_app.scanner import metadata_from_file, scan_videos
 from .actions import Action
 from .engine import decide, decide_with_technical
 from .models import Decision
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedBuildProgress:
+    completed: int
+    current_file: Path
+
+
+ProgressCallback = Callable[
+    [VerifiedBuildProgress],
+    None,
+]
 
 
 @dataclass(slots=True)
@@ -341,6 +354,7 @@ def _build_verified_decision_queue(
     *,
     incoming: list[MediaMetadata],
     library: list[MediaMetadata],
+    progress: ProgressCallback | None = None,
 ) -> DecisionQueue:
     """
     Build the operational decision queue using technical metadata
@@ -379,6 +393,14 @@ def _build_verified_decision_queue(
             probe_cache[resolved] = probe_media(
                 resolved
             )
+
+            if progress is not None:
+                progress(
+                    VerifiedBuildProgress(
+                        completed=len(probe_cache),
+                        current_file=resolved,
+                    )
+                )
 
         return probe_cache[resolved]
 
@@ -447,6 +469,7 @@ def build_decision_queue_from_paths(
     shuttle_path: Path,
     movie_libraries: list[Path],
     tv_libraries: list[Path],
+    progress: ProgressCallback | None = None,
 ) -> DecisionQueue:
     """
     Build the operational queue from real filesystem roots.
@@ -466,4 +489,5 @@ def build_decision_queue_from_paths(
     return _build_verified_decision_queue(
         incoming=incoming,
         library=library,
+        progress=progress,
     )
