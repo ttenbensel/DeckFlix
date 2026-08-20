@@ -5,6 +5,9 @@ from pathlib import Path
 from deckflix_app.library import LibraryIndex
 from deckflix_app.library.index import media_key
 from deckflix_app.media import MediaInfo
+from deckflix_app.metadata.enrichment import (
+    enrich_quality_from_technical,
+)
 from deckflix_app.metadata.models import MediaMetadata
 from deckflix_app.metadata.probe import probe_media
 from deckflix_app.quality import quality_score
@@ -179,6 +182,104 @@ def _deduplicate_incoming(
     ]
 
 
+def _deduplicate_incoming_verified(
+    incoming: list[MediaMetadata],
+    *,
+    probe_once,
+) -> list[MediaMetadata]:
+    """
+    Operational incoming deduplication using already-owned technical
+    probing.
+
+    Only complete logical identities with multiple candidates are
+    technically verified.
+
+    Unique incoming identities are returned without probing.
+
+    TV content without a complete season/episode identity remains
+    passthrough and is never collapsed here.
+
+    Successful probes may correct resolution and video codec before
+    quality ranking. Release source remains filename-derived.
+
+    Failed probes preserve filename-derived quality.
+
+    Equal verified scores retain the first occurrence so selection
+    remains deterministic.
+
+    No filesystem changes are performed.
+    """
+    groups: dict[
+        tuple,
+        list[MediaMetadata],
+    ] = {}
+
+    passthrough: list[MediaMetadata] = []
+
+    for media in incoming:
+        if (
+            media.media_type == "tv"
+            and (
+                media.season is None
+                or media.episode is None
+            )
+        ):
+            passthrough.append(media)
+            continue
+
+        key = media_key(media)
+
+        groups.setdefault(
+            key,
+            [],
+        ).append(media)
+
+    selected: list[MediaMetadata] = []
+
+    for candidates in groups.values():
+        if len(candidates) == 1:
+            selected.append(
+                candidates[0]
+            )
+            continue
+
+        winner = candidates[0]
+        winner_score = None
+
+        for candidate in candidates:
+            verified = candidate
+
+            if candidate.path is not None:
+                technical = probe_once(
+                    candidate.path
+                )
+
+                verified = (
+                    enrich_quality_from_technical(
+                        candidate,
+                        technical,
+                    )
+                )
+
+            candidate_score = quality_score(
+                verified
+            )
+
+            if (
+                winner_score is None
+                or candidate_score > winner_score
+            ):
+                winner = candidate
+                winner_score = candidate_score
+
+        selected.append(winner)
+
+    return [
+        *selected,
+        *passthrough,
+    ]
+
+
 def build_decision_queue(
     *,
     incoming: list[MediaMetadata],
@@ -230,26 +331,25 @@ def _build_verified_decision_queue(
     filename-derived decision when verified technical data cannot be
     obtained.
 
-    Incoming deduplication intentionally remains filename-based.
+    Incoming duplicate groups with complete logical identity are
+    technically verified before selecting their winning candidate.
+    Unique incoming identities and unknown-TV passthrough items are
+    not probed for deduplication.
 
-    NEW items are not technically probed because technical quality
-    cannot affect the absence of an existing library match.
+    NEW items are otherwise not technically probed because technical
+    quality cannot affect the absence of an existing library match.
     """
     index = LibraryIndex()
 
     for media in library:
         index.add(media)
 
-    deduplicated_incoming = _deduplicate_incoming(
-        incoming
-    )
-
     items = []
 
     # Technical metadata is cached only for the lifetime of this
-    # queue build. This prevents repeated ffprobe reads of the same
-    # real file without creating persistent or potentially stale
-    # technical metadata.
+    # queue build. The same cache is shared by incoming duplicate
+    # selection and later library comparison so a winning shuttle
+    # candidate is never re-probed during the same build.
     probe_cache = {}
 
     def probe_once(path: Path):
@@ -261,6 +361,13 @@ def _build_verified_decision_queue(
             )
 
         return probe_cache[resolved]
+
+    deduplicated_incoming = (
+        _deduplicate_incoming_verified(
+            incoming,
+            probe_once=probe_once,
+        )
+    )
 
     for media in deduplicated_incoming:
         existing = index.find(media)

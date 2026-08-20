@@ -771,3 +771,520 @@ def test_normal_tv_episode_deduplication_is_preserved():
 
     assert len(result) == 1
     assert result[0] is higher
+
+
+def test_verified_incoming_dedup_uses_technical_quality(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    Operational dedup must allow verified resolution/codec to correct
+    a misleading filename-only winner.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+        VideoStreamMetadata,
+    )
+
+    first_file = (
+        tmp_path
+        / "Avatar (2009) 1080p BluRay H264.mkv"
+    )
+    second_file = (
+        tmp_path
+        / "Avatar (2009) 720p BluRay H264.mkv"
+    )
+
+    first_file.write_bytes(b"first")
+    second_file.write_bytes(b"second")
+
+    first = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="H264",
+        path=first_file,
+    )
+
+    second = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        resolution="720p",
+        source="BluRay",
+        video_codec="H264",
+        path=second_file,
+    )
+
+    calls = []
+
+    def fake_probe(path):
+        resolved = Path(path).resolve()
+        calls.append(resolved)
+
+        if resolved == first_file.resolve():
+            width = 1280
+            height = 720
+        elif resolved == second_file.resolve():
+            width = 3840
+            height = 2160
+        else:
+            raise AssertionError(
+                f"unexpected probe path: {resolved}"
+            )
+
+        return TechnicalMetadata(
+            path=resolved,
+            probe_ok=True,
+            primary_video=VideoStreamMetadata(
+                index=0,
+                width=width,
+                height=height,
+                codec="h264",
+            ),
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        fake_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[
+                first,
+                second,
+            ],
+            library=[],
+        )
+    )
+
+    assert queue.total == 1
+    assert queue.items[0].incoming is second
+    assert (
+        queue.items[0].decision.action
+        is Action.NEW
+    )
+
+    assert sorted(calls) == sorted(
+        [
+            first_file.resolve(),
+            second_file.resolve(),
+        ]
+    )
+
+
+def test_verified_incoming_dedup_does_not_probe_unique_new_media(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    A unique NEW item still requires zero technical probes.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    incoming_file = (
+        tmp_path
+        / "Alien (1979) 1080p BluRay HEVC.mkv"
+    )
+    incoming_file.write_bytes(b"media")
+
+    incoming = MediaMetadata(
+        media_type="movie",
+        title="Alien",
+        content_type="movie",
+        year=1979,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=incoming_file,
+    )
+
+    calls = []
+
+    def forbidden_probe(path):
+        calls.append(Path(path))
+
+        raise AssertionError(
+            "unique NEW media must not be probed"
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        forbidden_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[incoming],
+            library=[],
+        )
+    )
+
+    assert queue.total == 1
+    assert (
+        queue.items[0].decision.action
+        is Action.NEW
+    )
+    assert calls == []
+
+
+def test_verified_incoming_dedup_failed_probe_falls_back_to_filename(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    Failed candidate probes preserve filename-derived ranking.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+    )
+
+    high_file = (
+        tmp_path
+        / "Avatar (2009) 1080p BluRay HEVC.mkv"
+    )
+    low_file = (
+        tmp_path
+        / "Avatar (2009) 720p BluRay H264.mkv"
+    )
+
+    high_file.write_bytes(b"high")
+    low_file.write_bytes(b"low")
+
+    high = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        resolution="1080p",
+        source="BluRay",
+        video_codec="HEVC",
+        path=high_file,
+    )
+
+    low = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        resolution="720p",
+        source="BluRay",
+        video_codec="H264",
+        path=low_file,
+    )
+
+    def failed_probe(path):
+        resolved = Path(path).resolve()
+
+        return TechnicalMetadata(
+            path=resolved,
+            probe_ok=False,
+            error="test probe failure",
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        failed_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[
+                high,
+                low,
+            ],
+            library=[],
+        )
+    )
+
+    assert queue.total == 1
+    assert queue.items[0].incoming is high
+
+
+def test_verified_incoming_dedup_equal_scores_keep_first(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    Equal verified quality retains the first candidate.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+        VideoStreamMetadata,
+    )
+
+    first_file = tmp_path / "Avatar (2009) first.mkv"
+    second_file = tmp_path / "Avatar (2009) second.mkv"
+
+    first_file.write_bytes(b"first")
+    second_file.write_bytes(b"second")
+
+    first = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        source="BluRay",
+        path=first_file,
+    )
+
+    second = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        source="BluRay",
+        path=second_file,
+    )
+
+    def fake_probe(path):
+        resolved = Path(path).resolve()
+
+        return TechnicalMetadata(
+            path=resolved,
+            probe_ok=True,
+            primary_video=VideoStreamMetadata(
+                index=0,
+                width=1920,
+                height=1080,
+                codec="hevc",
+            ),
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        fake_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[
+                first,
+                second,
+            ],
+            library=[],
+        )
+    )
+
+    assert queue.total == 1
+    assert queue.items[0].incoming is first
+
+
+def test_verified_incoming_dedup_preserves_unknown_tv_passthrough(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    Unknown-TV identity remains individual and must not be probed
+    merely because multiple files share the same series title.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    first_file = tmp_path / "Behind The Scenes.mkv"
+    second_file = tmp_path / "Deleted Scene.mkv"
+
+    first_file.write_bytes(b"first")
+    second_file.write_bytes(b"second")
+
+    first = MediaMetadata(
+        media_type="tv",
+        title="Rick and Morty",
+        content_type="extra",
+        season=None,
+        episode=None,
+        path=first_file,
+    )
+
+    second = MediaMetadata(
+        media_type="tv",
+        title="Rick and Morty",
+        content_type="extra",
+        season=None,
+        episode=None,
+        path=second_file,
+    )
+
+    calls = []
+
+    def forbidden_probe(path):
+        calls.append(Path(path))
+
+        raise AssertionError(
+            "unknown-TV passthrough must not be probed"
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        forbidden_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[
+                first,
+                second,
+            ],
+            library=[],
+        )
+    )
+
+    assert queue.total == 2
+    assert first in [
+        item.incoming
+        for item in queue.items
+    ]
+    assert second in [
+        item.incoming
+        for item in queue.items
+    ]
+    assert calls == []
+
+
+def test_verified_dedup_probe_cache_reused_for_library_comparison(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    A winning incoming candidate probed during duplicate selection
+    must reuse that same per-build result during library comparison.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+        VideoStreamMetadata,
+    )
+
+    first_file = (
+        tmp_path
+        / "Avatar (2009) first.mkv"
+    )
+    winner_file = (
+        tmp_path
+        / "Avatar (2009) second.mkv"
+    )
+    existing_file = (
+        tmp_path
+        / "Avatar (2009) existing.mkv"
+    )
+
+    first_file.write_bytes(b"first")
+    winner_file.write_bytes(b"winner")
+    existing_file.write_bytes(b"existing")
+
+    first = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        source="BluRay",
+        path=first_file,
+    )
+
+    winner = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        source="BluRay",
+        path=winner_file,
+    )
+
+    existing = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        source="BluRay",
+        path=existing_file,
+    )
+
+    calls = []
+
+    def fake_probe(path):
+        resolved = Path(path).resolve()
+        calls.append(resolved)
+
+        if resolved == first_file.resolve():
+            width = 1280
+            height = 720
+        elif resolved == winner_file.resolve():
+            width = 3840
+            height = 2160
+        elif resolved == existing_file.resolve():
+            width = 1920
+            height = 1080
+        else:
+            raise AssertionError(
+                f"unexpected probe path: {resolved}"
+            )
+
+        return TechnicalMetadata(
+            path=resolved,
+            probe_ok=True,
+            primary_video=VideoStreamMetadata(
+                index=0,
+                width=width,
+                height=height,
+                codec="hevc",
+            ),
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        fake_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[
+                first,
+                winner,
+            ],
+            library=[
+                existing,
+            ],
+        )
+    )
+
+    assert queue.total == 1
+    assert queue.items[0].incoming is winner
+    assert (
+        queue.items[0].decision.action
+        is Action.UPGRADE
+    )
+
+    assert calls.count(
+        winner_file.resolve()
+    ) == 1
+
+    assert sorted(calls) == sorted(
+        [
+            first_file.resolve(),
+            winner_file.resolve(),
+            existing_file.resolve(),
+        ]
+    )
