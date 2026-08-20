@@ -57,14 +57,6 @@ from deckflix_app.library import (
     current_deckflix_library_roots,
 )
 
-from deckflix_app.duplicate_inspector import (
-    show_duplicate_inspector,
-)
-
-from deckflix_app.repair_queue_screen import (
-    show_repair_queue,
-)
-
 from deckflix_app.maintenance.screen import (
     show_repair_preview,
 )
@@ -73,7 +65,6 @@ from deckflix_app.maintenance_ui import (
     system_verification,
     library_health,
     repair_preview,
-    duplicate_inspector,
     maintenance_plans,
 )
 
@@ -211,11 +202,9 @@ def main():
                 print("───────────────────────")
                 print("1. Review Decisions")
                 print("2. Misplaced TV Content")
-                print("3. Duplicate Inspector")
-                print("4. Repair Queue")
-                print("5. Repair Operation")
-                print("6. Maintenance Plans")
-                print("7. Back")
+                print("3. Repair Operation")
+                print("4. Maintenance Plans")
+                print("5. Back")
                 print()
 
                 sub = input(
@@ -234,15 +223,6 @@ def main():
                     )
 
                 elif sub == "3":
-                    duplicate_inspector(
-                        MOVIES,
-                        TV,
-                    )
-
-                elif sub == "4":
-                    show_repair_queue()
-
-                elif sub == "5":
                     audit = audit_libraries(
                         current_deckflix_library_roots()
                     )
@@ -255,13 +235,13 @@ def main():
                         plan
                     )
 
-                elif sub == "6":
+                elif sub == "4":
                     maintenance_plans(
                         CONFIG.report_directory
                         / "maintenance"
                     )
 
-                elif sub == "7":
+                elif sub == "5":
                     break
 
                 else:
