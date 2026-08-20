@@ -543,3 +543,110 @@ def test_back_returns_without_changes(
         ui.show_library_health()
         is None
     )
+
+
+def test_duplicate_review_shows_verified_quality_change(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+):
+    entry = make_entry(
+        tmp_path,
+        filename=(
+            "Alien (1979) 1080p HEVC.mkv"
+        ),
+        issues={
+            LibraryIssue.DUPLICATE_CANDIDATE,
+        },
+    )
+
+    key = (
+        "movie",
+        "alien",
+        1979,
+    )
+
+    audit = LibraryAudit(
+        entries=[entry],
+        duplicate_groups={
+            key: (entry,)
+        },
+        duplicate_classifications={
+            key:
+                DuplicateClassification.QUALITY_VARIANT,
+        },
+    )
+
+    class Verification:
+        resolution = "1080p"
+        video_codec = "h264"
+        changed = True
+
+    monkeypatch.setattr(
+        ui,
+        "verify_quality",
+        lambda media: Verification(),
+    )
+
+    ui._show_duplicate_groups(
+        audit
+    )
+
+    output = capsys.readouterr().out
+
+    assert (
+        "Verified:     1080p / h264"
+        in output
+    )
+
+
+def test_duplicate_review_hides_matching_verification(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+):
+    entry = make_entry(
+        tmp_path,
+        filename=(
+            "Alien (1979) 1080p x264.mkv"
+        ),
+        issues={
+            LibraryIssue.DUPLICATE_CANDIDATE,
+        },
+    )
+
+    key = (
+        "movie",
+        "alien",
+        1979,
+    )
+
+    audit = LibraryAudit(
+        entries=[entry],
+        duplicate_groups={
+            key: (entry,)
+        },
+        duplicate_classifications={
+            key:
+                DuplicateClassification.QUALITY_VARIANT,
+        },
+    )
+
+    class Verification:
+        resolution = "1080p"
+        video_codec = "h264"
+        changed = False
+
+    monkeypatch.setattr(
+        ui,
+        "verify_quality",
+        lambda media: Verification(),
+    )
+
+    ui._show_duplicate_groups(
+        audit
+    )
+
+    output = capsys.readouterr().out
+
+    assert "Verified:" not in output

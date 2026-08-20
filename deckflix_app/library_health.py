@@ -22,6 +22,9 @@ from deckflix_app.library.repair_operation import (
     RepairOperationState,
     RepairOperationTransitionError,
 )
+from deckflix_app.metadata.quality_verification import (
+    verify_quality,
+)
 from deckflix_app.library.integrity import (
     MediaIntegrityStatus,
     classify_media_integrity,
@@ -277,6 +280,29 @@ def _show_duplicate_groups(audit):
                 f"        Codec:        "
                 f"{media.video_codec or '-'}"
             )
+
+            verification = verify_quality(
+                media
+            )
+
+            if (
+                verification is not None
+                and verification.changed
+            ):
+                verified_resolution = (
+                    verification.resolution
+                    or "-"
+                )
+                verified_codec = (
+                    verification.video_codec
+                    or "-"
+                )
+
+                print(
+                    f"        Verified:     "
+                    f"{verified_resolution} / "
+                    f"{verified_codec}"
+                )
 
         print()
 
