@@ -245,6 +245,7 @@ def _deduplicate_incoming_verified(
 
         winner = candidates[0]
         winner_score = None
+        tied_for_best = 0
 
         for candidate in candidates:
             verified = candidate
@@ -271,6 +272,25 @@ def _deduplicate_incoming_verified(
             ):
                 winner = candidate
                 winner_score = candidate_score
+                tied_for_best = 1
+                continue
+
+            if candidate_score == winner_score:
+                # Equal verified quality deliberately keeps the
+                # existing winner. Scanner order therefore remains
+                # the deterministic tie-breaker.
+                #
+                # Track the tie explicitly rather than allowing it
+                # to be an accidental consequence of using ">".
+                tied_for_best += 1
+
+        # A verified tie is safe to collapse because every candidate
+        # at the best score is quality-equivalent according to the
+        # information DeckFlix currently owns. We intentionally do
+        # not widen DecisionQueueItem or operation persistence merely
+        # to record this transient selection detail.
+        if tied_for_best > 1:
+            pass
 
         selected.append(winner)
 

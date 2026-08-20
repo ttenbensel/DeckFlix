@@ -1089,6 +1089,184 @@ def test_verified_incoming_dedup_equal_scores_keep_first(
     assert queue.items[0].incoming is first
 
 
+def test_verified_incoming_dedup_three_way_tie_keeps_first(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    A multi-candidate verified tie remains deterministic and keeps
+    the first scanner candidate.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+        VideoStreamMetadata,
+    )
+
+    candidates = []
+
+    for name in (
+        "first",
+        "second",
+        "third",
+    ):
+        media_file = (
+            tmp_path
+            / f"Avatar (2009) {name}.mkv"
+        )
+
+        media_file.write_bytes(
+            name.encode()
+        )
+
+        candidates.append(
+            MediaMetadata(
+                media_type="movie",
+                title="Avatar",
+                content_type="movie",
+                year=2009,
+                source="BluRay",
+                path=media_file,
+            )
+        )
+
+    probe_calls = []
+
+    def fake_probe(path):
+        resolved = Path(path).resolve()
+        probe_calls.append(resolved)
+
+        return TechnicalMetadata(
+            path=resolved,
+            probe_ok=True,
+            primary_video=VideoStreamMetadata(
+                index=0,
+                width=1920,
+                height=1080,
+                codec="hevc",
+            ),
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        fake_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=candidates,
+            library=[],
+        )
+    )
+
+    assert queue.total == 1
+    assert queue.items[0].incoming is candidates[0]
+
+    assert len(probe_calls) == 3
+    assert len(set(probe_calls)) == 3
+
+
+def test_verified_incoming_dedup_later_better_resets_tie(
+    tmp_path: Path,
+    monkeypatch,
+):
+    """
+    A tie among lower candidates must not prevent a later verified
+    higher-quality candidate from becoming the winner.
+    """
+    import deckflix_app.decision.queue as queue_module
+
+    from deckflix_app.metadata.technical import (
+        TechnicalMetadata,
+        VideoStreamMetadata,
+    )
+
+    first_file = tmp_path / "Avatar (2009) first.mkv"
+    second_file = tmp_path / "Avatar (2009) second.mkv"
+    winner_file = tmp_path / "Avatar (2009) winner.mkv"
+
+    first_file.write_bytes(b"first")
+    second_file.write_bytes(b"second")
+    winner_file.write_bytes(b"winner")
+
+    first = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        source="BluRay",
+        path=first_file,
+    )
+
+    second = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        source="BluRay",
+        path=second_file,
+    )
+
+    winner = MediaMetadata(
+        media_type="movie",
+        title="Avatar",
+        content_type="movie",
+        year=2009,
+        source="BluRay",
+        path=winner_file,
+    )
+
+    def fake_probe(path):
+        resolved = Path(path).resolve()
+
+        height = (
+            2160
+            if resolved == winner_file.resolve()
+            else 1080
+        )
+
+        width = (
+            3840
+            if height == 2160
+            else 1920
+        )
+
+        return TechnicalMetadata(
+            path=resolved,
+            probe_ok=True,
+            primary_video=VideoStreamMetadata(
+                index=0,
+                width=width,
+                height=height,
+                codec="hevc",
+            ),
+        )
+
+    monkeypatch.setattr(
+        queue_module,
+        "probe_media",
+        fake_probe,
+    )
+
+    queue = (
+        queue_module
+        ._build_verified_decision_queue(
+            incoming=[
+                first,
+                second,
+                winner,
+            ],
+            library=[],
+        )
+    )
+
+    assert queue.total == 1
+    assert queue.items[0].incoming is winner
+
+
 def test_verified_incoming_dedup_preserves_unknown_tv_passthrough(
     tmp_path: Path,
     monkeypatch,
