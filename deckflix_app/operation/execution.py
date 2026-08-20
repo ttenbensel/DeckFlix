@@ -17,81 +17,16 @@ from .history import (
     save_history_record,
 )
 
+from .destination import (
+    destination_for_media,
+)
 from .manager import (
     InvalidOperationTransition,
     OperationManager,
 )
-
-
-def destination_for_media(
-    media,
-    *,
-    movie_library: Path,
-    tv_library: Path,
-) -> Path:
-    if media.path is None:
-        raise ValueError(
-            f"Media has no source path: {media.title}"
-        )
-
-    filename = media.path.name
-
-    if media.media_type == "tv":
-        content_type = getattr(
-            media,
-            "content_type",
-            None,
-        )
-
-        if content_type == "extra":
-            return (
-                Path(tv_library)
-                / media.title
-                / "Extras"
-                / filename
-            )
-
-        if content_type == "special":
-            return (
-                Path(tv_library)
-                / media.title
-                / "Specials"
-                / filename
-            )
-
-        if getattr(media, "content_type", None) == "special":
-            return (
-                Path(tv_library)
-                / media.title
-                / "Specials"
-                / filename
-            )
-
-        if media.season is None:
-            raise ValueError(
-                f"TV media has no season: {media.title}"
-            )
-
-        return (
-            Path(tv_library)
-            / media.title
-            / f"Season {media.season:02d}"
-            / filename
-        )
-
-    folder = media.title
-
-    if media.year:
-        folder = (
-            f"{media.title} "
-            f"({media.year})"
-        )
-
-    return (
-        Path(movie_library)
-        / folder
-        / filename
-    )
+from .preflight import (
+    run_import_preflight,
+)
 
 
 def approve_ready_items(
@@ -303,6 +238,58 @@ def execute_operation(
             f"{operation.state.value}"
         )
 
+    active_journal_path = (
+        Path(journal_path)
+        if journal_path is not None
+        else (
+            Path(temp_dir)
+            / "import-journal.json"
+        )
+    )
+
+    preflight = run_import_preflight(
+        manager,
+        movie_library=movie_library,
+        tv_library=tv_library,
+        temp_dir=Path(temp_dir),
+        journal_path=active_journal_path,
+    )
+
+    if not preflight.ready:
+        reasons: list[str] = []
+
+        if preflight.missing_sources:
+            reasons.append(
+                f"{len(preflight.missing_sources)} "
+                "approved source file(s) are missing"
+            )
+
+        if preflight.changed_sources:
+            reasons.append(
+                f"{len(preflight.changed_sources)} "
+                "approved source file(s) changed"
+            )
+
+        if preflight.conflicts:
+            reasons.append(
+                f"{len(preflight.conflicts)} "
+                "destination conflict(s)"
+            )
+
+        reasons.extend(
+            preflight.errors
+        )
+
+        if not reasons:
+            reasons.append(
+                "import preflight is not ready"
+            )
+
+        raise InvalidOperationTransition(
+            "Import preflight failed: "
+            + "; ".join(reasons)
+        )
+
     queue = (
         build_operation_import_queue(
             manager,
@@ -318,15 +305,6 @@ def execute_operation(
         )
 
     manager.begin_import()
-
-    active_journal_path = (
-        Path(journal_path)
-        if journal_path is not None
-        else (
-            Path(temp_dir)
-            / "import-journal.json"
-        )
-    )
 
     result = (
         ResumableImportExecutor()

@@ -245,3 +245,79 @@ def test_destination_for_tv_episode(
         / "1883"
         / "Season 01"
     )
+
+def test_execute_operation_rejects_stale_destination_before_import(
+    tmp_path,
+):
+    """
+    An approved NEW item may become stale if its destination
+    appears after approval but before execution.
+
+    Execution must fail closed before entering IMPORTING and
+    must preserve the existing destination byte-for-byte.
+    """
+    from deckflix_app.decision import (
+        ApprovalStatus,
+    )
+    from deckflix_app.operation import (
+        OperationState,
+        execute_operation,
+    )
+
+    manager, source, movie_library, tv_library = (
+        prepare_new_movie(
+            tmp_path
+        )
+    )
+
+    approve_ready_items(
+        manager
+    )
+
+    approved = manager.approval_plan.approved()
+
+    assert len(approved) == 1
+    assert (
+        approved[0].status
+        is ApprovalStatus.APPROVED
+    )
+
+    media = approved[0].queue_item.incoming
+
+    destination = destination_for_media(
+        media,
+        movie_library=movie_library,
+        tv_library=tv_library,
+    )
+
+    destination.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    destination.write_bytes(
+        b"existing-library-content"
+    )
+
+    before = destination.read_bytes()
+
+    import pytest
+
+    with pytest.raises(
+        Exception,
+        match="destination conflict",
+    ):
+        execute_operation(
+            manager,
+            movie_library=movie_library,
+            tv_library=tv_library,
+            temp_dir=tmp_path / "temp",
+            read_only=False,
+        )
+
+    assert (
+        manager.state
+        is OperationState.APPROVED
+    )
+    assert destination.read_bytes() == before
+    assert source.exists()
+

@@ -7,7 +7,14 @@ import tempfile
 from deckflix_app.decision import (
     ApprovalStatus,
 )
-from deckflix_app.operation.execution import (
+from deckflix_app.importer.checksum import (
+    verify,
+)
+from deckflix_app.importer.journal import (
+    load_import_journal,
+)
+
+from .destination import (
     destination_for_media,
 )
 
@@ -96,25 +103,119 @@ def _directory_is_writable(path: Path) -> bool:
         return False
 
 
-def _completed_destinations(
+def _resume_entries(
     journal_path: Path | None,
-) -> set[Path]:
-    if journal_path is None or not journal_path.exists():
-        return set()
+    *,
+    operation_id: str,
+) -> dict[Path, object]:
+    """
+    Load resumable import evidence for this exact operation.
+
+    A journal from another operation is never trusted.
+
+    Entry destinations are indexed by resolved path, but individual
+    source/destination identity and file content are still verified
+    before preflight treats an existing destination as resumable.
+    """
+    if journal_path is None:
+        return {}
+
+    journal_path = Path(journal_path)
+
+    if not journal_path.exists():
+        return {}
 
     try:
-        with journal_path.open() as f:
-            data = json.load(f)
+        journal = load_import_journal(
+            journal_path
+        )
 
-    except (OSError, json.JSONDecodeError):
-        return set()
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        json.JSONDecodeError,
+    ):
+        return {}
 
-    return {
-        Path(entry["destination"])
-        for entry in data.get("entries", {}).values()
-        if entry.get("status") == "COMPLETED"
-        and entry.get("destination")
-    }
+    if (
+        journal is None
+        or journal.operation_id != operation_id
+    ):
+        return {}
+
+    entries = {}
+
+    for entry in journal.entries.values():
+        try:
+            destination = (
+                Path(entry.destination)
+                .resolve()
+            )
+        except (OSError, ValueError):
+            continue
+
+        entries[destination] = entry
+
+    return entries
+
+
+def _destination_is_resumable(
+    *,
+    source: Path,
+    destination: Path,
+    resume_entries: dict[Path, object],
+) -> bool:
+    """
+    Return True only when an existing destination is backed by the
+    active operation journal and still matches its shuttle source.
+
+    The resumable executor deliberately reconciles COMPLETED,
+    PENDING and FAILED journal states by checksum. PENDING/FAILED
+    support is required for a process interruption after the atomic
+    destination move but before the journal status was updated.
+    """
+    source = Path(source).resolve()
+    destination = Path(
+        destination
+    ).resolve()
+
+    entry = resume_entries.get(
+        destination
+    )
+
+    if entry is None:
+        return False
+
+    try:
+        journal_source = (
+            Path(entry.source)
+            .resolve()
+        )
+        journal_destination = (
+            Path(entry.destination)
+            .resolve()
+        )
+    except (OSError, ValueError):
+        return False
+
+    if journal_source != source:
+        return False
+
+    if journal_destination != destination:
+        return False
+
+    if not destination.exists():
+        return False
+
+    try:
+        return verify(
+            source,
+            destination,
+        )
+    except OSError:
+        return False
 
 
 def _source_matches_snapshot(
@@ -162,8 +263,9 @@ def run_import_preflight(
 
     result = ImportPreflightResult()
 
-    completed_destinations = _completed_destinations(
-        journal_path
+    resume_entries = _resume_entries(
+        journal_path,
+        operation_id=operation.id,
     )
 
     result.snapshot_valid = (
@@ -284,12 +386,17 @@ def run_import_preflight(
             )
             continue
 
-        # A COMPLETED journal entry represents media that has
-        # already been successfully imported and verified.
-        # It must remain subject to snapshot/source validation
-        # above, but must not consume additional destination
-        # free-space budget during a resumed import.
-        if destination in completed_destinations:
+        # Existing destinations are accepted only when the active
+        # operation journal identifies this exact source/destination
+        # pair and the destination still verifies against the source.
+        #
+        # This preserves safe interruption recovery without allowing
+        # an unrelated stale destination to bypass preflight.
+        if _destination_is_resumable(
+            source=source,
+            destination=destination,
+            resume_entries=resume_entries,
+        ):
             continue
 
         if media.media_type == "tv":
@@ -297,10 +404,7 @@ def run_import_preflight(
         else:
             result.movie_bytes += source_size
 
-        if (
-            destination.exists()
-            and destination not in completed_destinations
-        ):
+        if destination.exists():
             result.conflicts.append(
                 PreflightConflict(
                     source=source,
