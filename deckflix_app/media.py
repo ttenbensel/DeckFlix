@@ -168,6 +168,17 @@ EPISODE_WORD_PATTERN = re.compile(
 )
 
 
+HASH_EPISODE_PATTERN = re.compile(
+    r"""
+    (?:^|[ ._-])
+    \#\s*
+    (\d{1,3})
+    (?=[ ._-]|$)
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
 BARE_E_PATTERN = re.compile(
     r"\b[Ee](\d{1,3})\b",
 )
@@ -589,6 +600,21 @@ def _part_number_in_season_context(
 def _episode_number_in_season_context(
     stem: str,
 ) -> int | None:
+    """
+    Return an explicit episode number when the enclosing
+    directory has already established the season.
+
+    Supported contextual forms include:
+
+        Episode 04
+        E04
+        # 04
+
+    The hash form is deliberately valid only here, after an
+    explicit Season directory has supplied the season identity.
+    A bare "# 04" elsewhere is not enough evidence to classify
+    a file as television.
+    """
     match = EPISODE_WORD_PATTERN.search(
         stem
     )
@@ -600,6 +626,16 @@ def _episode_number_in_season_context(
             return episode
 
     match = BARE_E_PATTERN.search(
+        stem
+    )
+
+    if match:
+        episode = int(match.group(1))
+
+        if episode > 0:
+            return episode
+
+    match = HASH_EPISODE_PATTERN.search(
         stem
     )
 

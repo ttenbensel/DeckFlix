@@ -236,3 +236,56 @@ def test_yts_5_1_folder_does_not_become_tv(
     assert media.year == 2021
     assert media.season is None
     assert media.episode is None
+
+
+def test_hash_episode_scanner_identity(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "Two and a Half Men"
+        / "Season 5"
+        / "Two.and.a.Half.Men.# 16.avi"
+    )
+
+    file.parent.mkdir(
+        parents=True
+    )
+    file.touch()
+
+    media = metadata_from_file(
+        file
+    )
+
+    assert media.media_type == "tv"
+    assert media.title == "Two and a Half Men"
+    assert media.content_type == "episode"
+    assert media.season == 5
+    assert media.episode == 16
+
+
+def test_existing_extra_protection_survives_hash_change(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "Rick and Morty"
+        / "Release"
+        / "Extras"
+        / "Behind The Scenes # 01.mkv"
+    )
+
+    file.parent.mkdir(
+        parents=True
+    )
+    file.touch()
+
+    media = metadata_from_file(
+        file
+    )
+
+    assert media.media_type == "tv"
+    assert media.title == "Rick and Morty"
+    assert media.content_type == "extra"
+    assert media.season is None
+    assert media.episode is None

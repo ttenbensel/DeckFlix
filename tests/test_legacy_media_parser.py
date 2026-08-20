@@ -502,3 +502,100 @@ def test_s00_parent_and_e01_filename_becomes_special_episode(
     assert media.title == "South Park"
     assert media.season == 0
     assert media.episode == 1
+
+
+def test_hash_episode_uses_explicit_season_directory(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "Two and a Half Men"
+        / "Season 5"
+        / "Two.and.a.Half.Men.# 01.avi"
+    )
+
+    file.parent.mkdir(
+        parents=True
+    )
+    file.touch()
+
+    media = inspect_media(
+        file
+    )
+
+    assert media.media_type == "tv"
+    assert media.title == "Two and a Half Men"
+    assert media.season == 5
+    assert media.episode == 1
+
+
+def test_hash_episode_preserves_double_digit_episode(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "Two and a Half Men"
+        / "Season 5"
+        / "Two.and.a.Half.Men.# 16.avi"
+    )
+
+    file.parent.mkdir(
+        parents=True
+    )
+    file.touch()
+
+    media = inspect_media(
+        file
+    )
+
+    assert media.media_type == "tv"
+    assert media.title == "Two and a Half Men"
+    assert media.season == 5
+    assert media.episode == 16
+
+
+def test_hash_number_without_season_context_is_not_promoted(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "Movie Collection"
+        / "Example # 01.avi"
+    )
+
+    file.parent.mkdir(
+        parents=True
+    )
+    file.touch()
+
+    media = inspect_media(
+        file
+    )
+
+    assert media.media_type == "movie"
+    assert media.season is None
+    assert media.episode is None
+
+
+def test_title_only_file_in_season_directory_is_not_guessed(
+    tmp_path: Path,
+):
+    file = (
+        tmp_path
+        / "The Simpsons"
+        / "Season 9"
+        / "Bart Carny.m4v"
+    )
+
+    file.parent.mkdir(
+        parents=True
+    )
+    file.touch()
+
+    media = inspect_media(
+        file
+    )
+
+    assert media.media_type == "movie"
+    assert media.season is None
+    assert media.episode is None
