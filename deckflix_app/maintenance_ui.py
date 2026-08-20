@@ -7,7 +7,6 @@ from deckflix_app.health import (
 )
 from deckflix_app.library_health import show_library_health
 from deckflix_app.system_verification import run_system_verification
-from deckflix_app.duplicate_inspector import show_duplicate_inspector
 from deckflix_app.maintenance.plans_screen import (
     show_maintenance_plans,
 )
@@ -191,15 +190,6 @@ def repair_preview(
         else:
             print("Invalid option.")
 
-
-def duplicate_inspector(
-    movies,
-    tv,
-):
-    show_duplicate_inspector(
-        movies,
-        tv,
-    )
 
 def maintenance_plans(
     directory,
