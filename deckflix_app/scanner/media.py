@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 from deckflix_app.media import (
     SPECIAL_X_PATTERN,
@@ -18,6 +19,36 @@ from deckflix_app.metadata.patterns import (
 )
 
 from .filesystem import scan_directory
+
+
+_SEASON_DIRECTORY_PATTERN = re.compile(
+    r"""
+    ^
+    season[ ._-]*0*
+    (\d{1,3})
+    $
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+_CONTEXTUAL_SPECIAL_PATTERN = re.compile(
+    r"""
+    (?:
+        (?:^|[ ._-])
+        special
+        (?=[ ._-]|$)
+
+        |
+
+        [Ss]\s*\d{1,3}
+        [ ._-]*
+        special
+        (?=[ ._-]|$)
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
 
 
 def _known(value: str | None) -> str | None:
@@ -92,20 +123,9 @@ def _metadata_from_extra(
     """
     Recognise a TV series extra from its directory context.
 
-    The real shuttle currently contains structures such as:
-
-        Series Name/
-            Release or Season Folder/
-                Extras/
-                    file.mkv
-
-    The series identity is therefore the directory two levels
-    above the Extras directory.
-
-    Extras are classified as TV content rather than movies.
-
-    Episode numbers embedded in an extra filename must not cause
-    the file to become a normal TV episode.
+    Extras remain TV auxiliary content and must never be
+    promoted to ordinary episodes or specials merely because
+    their filenames contain episode-like text.
     """
     parts = path.parts
 
@@ -158,6 +178,90 @@ def _metadata_from_extra(
     )
 
 
+def _metadata_from_contextual_special(
+    path: Path,
+    *,
+    inspected,
+) -> MediaMetadata | None:
+    """
+    Recognise an explicit TV special only when directory
+    context already establishes a television season.
+
+    Example:
+
+        The Walking Dead/
+            Season 4/
+                The.Walking.Dead.S04.Special.Inside....mp4
+
+        -> title="The Walking Dead"
+           media_type="tv"
+           content_type="special"
+
+    No episode number is invented.
+
+    This deliberately requires BOTH:
+      - an explicit Season directory, and
+      - an explicit "Special" token in the filename.
+
+    A movie containing the word "special" outside a Season
+    directory therefore remains unaffected.
+    """
+    if not _CONTEXTUAL_SPECIAL_PATTERN.search(
+        path.stem
+    ):
+        return None
+
+    for parent in path.parents:
+        match = _SEASON_DIRECTORY_PATTERN.fullmatch(
+            parent.name
+        )
+
+        if match is None:
+            continue
+
+        show_directory = parent.parent
+
+        if show_directory == parent:
+            return None
+
+        title = show_directory.name.strip()
+
+        if not title:
+            return None
+
+        try:
+            size = path.stat().st_size
+        except OSError:
+            size = 0
+
+        return MediaMetadata(
+            media_type="tv",
+            title=title,
+            content_type="special",
+            year=None,
+            season=None,
+            episode=None,
+            resolution=_known(
+                inspected.resolution
+            ),
+            source=_known(
+                inspected.source
+            ),
+            video_codec=_known(
+                inspected.codec
+            ),
+            container=(
+                path.suffix
+                .lstrip(".")
+                .lower()
+            ),
+            path=path,
+            size=size,
+        )
+
+    return None
+
+
 def _metadata_from_special_filename(
     path: Path,
     parsed: MediaMetadata,
@@ -165,12 +269,8 @@ def _metadata_from_special_filename(
     """
     Correct the identity of explicit SxxE00-style TV specials.
 
-    parse_filename() correctly identifies these as TV specials,
-    but its title is derived from the complete filename prefix.
-
-    Specials deliberately retain no normal season/episode
-    assignment. Their destination routing is handled separately
-    as <TV root>/<Series>/Specials/.
+    parse_filename() identifies these as TV specials, but the
+    title must be reduced to the parent series identity.
     """
     if (
         parsed.media_type != "tv"
@@ -231,14 +331,9 @@ def _metadata_from_title_catalog(
     Promote a title-only file to a TV episode only when a
     trusted catalogue provides an exact identity.
 
-    The candidate title comes directly from the filename stem.
-
-    This is important because inspect_media() deliberately falls
-    back conservatively when a Season directory contains a file
-    with no numeric episode marker. Its fallback title therefore
-    must not be treated as the episode title.
-
-    Unknown titles remain unresolved rather than being guessed.
+    Filename stem is the candidate title. Unknown titles fail
+    closed; no fuzzy matching or directory-order guessing is
+    permitted.
     """
     identity = resolve_title_only_episode(
         path,
@@ -289,17 +384,16 @@ def metadata_from_file(
     Resolution order:
 
       1. explicit TV Extras;
-      2. contextual/legacy TV detection;
+      2. contextual/legacy TV episodes;
       3. conservative SxxXyy handling;
-      4. trusted title-only episode catalogue;
-      5. legacy series-specific Extras compatibility;
-      6. filename parser;
-      7. explicit SxxE00 correction;
-      8. ordinary movie fallback.
+      4. explicit contextual TV specials;
+      5. trusted title-only episode catalogue;
+      6. legacy series-specific Extras compatibility;
+      7. filename parser;
+      8. explicit SxxE00 correction;
+      9. ordinary movie fallback.
 
-    Trusted title resolution is exact and fail-closed. It never
-    uses directory ordering, fuzzy matching, or guessed episode
-    numbers.
+    All contextual promotion rules fail closed.
     """
     path = Path(file)
 
@@ -319,12 +413,25 @@ def metadata_from_file(
             inspected
         )
 
+    # Preserve the deliberately conservative SxxXyy rule before
+    # any contextual-special logic can reinterpret the word
+    # "Special" in such a filename.
     if SPECIAL_X_PATTERN.search(
         path.stem
     ):
         return _metadata_from_inspected(
             inspected
         )
+
+    contextual_special = (
+        _metadata_from_contextual_special(
+            path,
+            inspected=inspected,
+        )
+    )
+
+    if contextual_special is not None:
+        return contextual_special
 
     title_catalog_metadata = (
         _metadata_from_title_catalog(
