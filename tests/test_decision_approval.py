@@ -75,3 +75,210 @@ def test_approval_plan_summary():
     assert len(plan.approved()) == 0
     assert len(plan.skipped()) == 1
     assert len(plan.review()) == 1
+
+
+def test_review_item_can_be_approved():
+    from deckflix_app.decision import (
+        ApprovalStatus,
+    )
+
+    queue = build_decision_queue(
+        incoming=[
+            movie(
+                "Dune",
+                2021,
+                "2160p",
+            ),
+        ],
+        library=[
+            movie(
+                "Dune",
+                2021,
+                "1080p",
+            ),
+        ],
+    )
+
+    plan = build_approval_plan(queue)
+
+    assert len(plan.review()) == 1
+
+    item = plan.review()[0]
+
+    result = plan.approve_review(item)
+
+    assert result is item
+    assert item.status is ApprovalStatus.APPROVED
+    assert len(plan.review()) == 0
+    assert len(plan.approved()) == 1
+
+
+def test_review_item_can_be_skipped():
+    from deckflix_app.decision import (
+        ApprovalStatus,
+    )
+
+    queue = build_decision_queue(
+        incoming=[
+            movie(
+                "Dune",
+                2021,
+                "2160p",
+            ),
+        ],
+        library=[
+            movie(
+                "Dune",
+                2021,
+                "1080p",
+            ),
+        ],
+    )
+
+    plan = build_approval_plan(queue)
+
+    item = plan.review()[0]
+
+    result = plan.skip_review(item)
+
+    assert result is item
+    assert item.status is ApprovalStatus.SKIPPED
+    assert len(plan.review()) == 0
+    assert len(plan.skipped()) == 1
+
+
+def test_non_review_item_cannot_be_resolved():
+    import pytest
+
+    from deckflix_app.decision import (
+        ApprovalStatus,
+        InvalidApprovalResolution,
+    )
+
+    queue = build_decision_queue(
+        incoming=[
+            movie(
+                "Alien",
+                1979,
+                "1080p",
+            ),
+        ],
+        library=[],
+    )
+
+    plan = build_approval_plan(queue)
+
+    item = plan.ready()[0]
+
+    with pytest.raises(
+        InvalidApprovalResolution,
+        match="Only REVIEW items",
+    ):
+        plan.resolve_review(
+            item,
+            ApprovalStatus.APPROVED,
+        )
+
+    assert item.status is ApprovalStatus.READY
+
+
+def test_review_item_rejects_invalid_resolution():
+    import pytest
+
+    from deckflix_app.decision import (
+        ApprovalStatus,
+        InvalidApprovalResolution,
+    )
+
+    queue = build_decision_queue(
+        incoming=[
+            movie(
+                "Dune",
+                2021,
+                "2160p",
+            ),
+        ],
+        library=[
+            movie(
+                "Dune",
+                2021,
+                "1080p",
+            ),
+        ],
+    )
+
+    plan = build_approval_plan(queue)
+
+    item = plan.review()[0]
+
+    with pytest.raises(
+        InvalidApprovalResolution,
+        match="APPROVED or SKIPPED",
+    ):
+        plan.resolve_review(
+            item,
+            ApprovalStatus.READY,
+        )
+
+    assert item.status is ApprovalStatus.REVIEW
+
+
+def test_review_item_from_other_plan_is_rejected():
+    import pytest
+
+    from deckflix_app.decision import (
+        InvalidApprovalResolution,
+    )
+
+    first_queue = build_decision_queue(
+        incoming=[
+            movie(
+                "Dune",
+                2021,
+                "2160p",
+            ),
+        ],
+        library=[
+            movie(
+                "Dune",
+                2021,
+                "1080p",
+            ),
+        ],
+    )
+
+    second_queue = build_decision_queue(
+        incoming=[
+            movie(
+                "Avatar",
+                2009,
+                "2160p",
+            ),
+        ],
+        library=[
+            movie(
+                "Avatar",
+                2009,
+                "1080p",
+            ),
+        ],
+    )
+
+    first_plan = build_approval_plan(
+        first_queue
+    )
+    second_plan = build_approval_plan(
+        second_queue
+    )
+
+    foreign_item = (
+        second_plan.review()[0]
+    )
+
+    with pytest.raises(
+        InvalidApprovalResolution,
+        match="does not belong",
+    ):
+        first_plan.approve_review(
+            foreign_item
+        )

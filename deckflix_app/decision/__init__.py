@@ -2,6 +2,7 @@ from .approval import (
     ApprovalItem,
     ApprovalPlan,
     ApprovalStatus,
+    InvalidApprovalResolution,
     build_approval_plan,
     default_approval_status,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "ApprovalItem",
     "ApprovalPlan",
     "ApprovalStatus",
+    "InvalidApprovalResolution",
     "build_approval_plan",
     "default_approval_status",
     "DecisionQueue",

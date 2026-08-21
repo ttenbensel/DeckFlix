@@ -17,6 +17,13 @@ class ApprovalStatus(str, Enum):
     REVIEW = "REVIEW"
 
 
+class InvalidApprovalResolution(ValueError):
+    """
+    Raised when an approval item cannot safely transition
+    to the requested operator resolution.
+    """
+
+
 @dataclass(slots=True)
 class ApprovalItem:
     queue_item: DecisionQueueItem
@@ -76,6 +83,67 @@ class ApprovalPlan:
             if item.status
             is ApprovalStatus.REVIEW
         ]
+
+    def resolve_review(
+        self,
+        item: ApprovalItem,
+        resolution: ApprovalStatus,
+    ) -> ApprovalItem:
+        """
+        Resolve one operator-review item.
+
+        Only REVIEW items may be resolved through this API,
+        and the only legal terminal resolutions are APPROVED
+        and SKIPPED.
+
+        The caller is responsible for deciding *why* the item
+        is safe to approve or should be skipped. This method
+        owns only the state transition and fails closed for
+        invalid transitions.
+        """
+        if not any(
+            candidate is item
+            for candidate in self.items
+        ):
+            raise InvalidApprovalResolution(
+                "Approval item does not belong to this plan"
+            )
+
+        if item.status is not ApprovalStatus.REVIEW:
+            raise InvalidApprovalResolution(
+                "Only REVIEW items may be resolved"
+            )
+
+        if resolution not in {
+            ApprovalStatus.APPROVED,
+            ApprovalStatus.SKIPPED,
+        }:
+            raise InvalidApprovalResolution(
+                "REVIEW items may only resolve to "
+                "APPROVED or SKIPPED"
+            )
+
+        item.status = resolution
+
+        return item
+
+    def approve_review(
+        self,
+        item: ApprovalItem,
+    ) -> ApprovalItem:
+        return self.resolve_review(
+            item,
+            ApprovalStatus.APPROVED,
+        )
+
+    def skip_review(
+        self,
+        item: ApprovalItem,
+    ) -> ApprovalItem:
+        return self.resolve_review(
+            item,
+            ApprovalStatus.SKIPPED,
+        )
 
 
 def default_approval_status(
