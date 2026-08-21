@@ -321,3 +321,69 @@ def test_execute_operation_rejects_stale_destination_before_import(
     assert destination.read_bytes() == before
     assert source.exists()
 
+
+
+
+def test_upgrade_queue_carries_existing_replace_path(
+    tmp_path: Path,
+):
+    from dataclasses import replace
+
+    from deckflix_app.decision import Action
+
+    manager, _, movies, tv = prepare_new_movie(
+        tmp_path
+    )
+
+    item = manager.decisions.items[0]
+
+    existing = (
+        movies
+        / "Alien (1979)"
+        / "Alien.1979.old.mkv"
+    )
+
+    existing.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    existing.write_bytes(
+        b"old"
+    )
+
+    item.existing = replace(
+        item.incoming,
+        path=existing,
+    )
+
+    item.decision = replace(
+        item.decision,
+        action=Action.UPGRADE,
+    )
+
+    approve_ready_items(
+        manager
+    )
+
+    queue = build_operation_import_queue(
+        manager,
+        movie_library=movies,
+        tv_library=tv,
+    )
+
+    assert len(queue.jobs) == 1
+
+    job = queue.jobs[0]
+
+    assert job.source == item.incoming.path
+    assert job.replace_path == existing
+    assert (
+        job.decision.action
+        is Action.UPGRADE
+    )
+
+    assert (
+        job.destination.resolve()
+        != existing.resolve()
+    )

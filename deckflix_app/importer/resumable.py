@@ -62,6 +62,47 @@ class ResumableImportExecutor:
                 job,
                 entry.status,
             ):
+                try:
+                    ImportEngine._retire_replaced_media(
+                        job
+                    )
+                except Exception as error:
+                    mark_journal_failed(
+                        journal,
+                        job,
+                        error,
+                    )
+                    save_import_journal(
+                        journal,
+                        journal_path,
+                    )
+
+                    result.failed += 1
+                    result.failures.append(
+                        ImportFailure(
+                            job=job,
+                            error=error,
+                        )
+                    )
+
+                    self._emit(
+                        progress,
+                        ImportProgress(
+                            stage=ImportStage.FAILED,
+                            current=(
+                                result.completed
+                                + result.failed
+                            ),
+                            total=result.total,
+                            source=job.source,
+                            destination=job.destination,
+                            message=str(error),
+                        ),
+                    )
+                    continue
+
+                job.completed = True
+
                 mark_journal_completed(journal, job)
                 save_import_journal(journal, journal_path)
 
@@ -152,7 +193,8 @@ class ResumableImportExecutor:
 
             except BaseException:
                 # The destination may already have been atomically moved
-                # into the library. The next run reconciles it by checksum.
+                # into the library. The next run reconciles it by checksum
+                # and completes any pending upgrade retirement.
                 save_import_journal(journal, journal_path)
                 raise
 
@@ -225,7 +267,6 @@ class ResumableImportExecutor:
 
         job.copied = True
         job.verified = True
-        job.completed = True
 
         return True
 

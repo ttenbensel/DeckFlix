@@ -113,11 +113,32 @@ def build_operation_import_queue(
                 f"{destination}"
             )
 
+        replace_path = None
+
+        if (
+            item.decision.action.value
+            == "UPGRADE"
+        ):
+            if (
+                item.existing is None
+                or item.existing.path is None
+            ):
+                raise InvalidOperationTransition(
+                    "Approved UPGRADE has no "
+                    "existing library path: "
+                    f"{media.title}"
+                )
+
+            replace_path = (
+                Path(item.existing.path)
+            )
+
         queue.add(
             ImportJob(
                 source=media.path,
                 destination=destination,
                 decision=item.decision,
+                replace_path=replace_path,
             )
         )
 

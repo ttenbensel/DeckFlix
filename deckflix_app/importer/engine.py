@@ -90,6 +90,17 @@ class ImportEngine:
                     job.destination,
                 )
 
+                if not verify(
+                    Path(job.source),
+                    Path(job.destination),
+                ):
+                    raise RuntimeError(
+                        "Installed destination checksum "
+                        "verification failed"
+                    )
+
+                self._retire_replaced_media(job)
+
                 job.completed = True
                 result.completed += 1
 
@@ -140,6 +151,45 @@ class ImportEngine:
         )
 
         return result
+
+    @staticmethod
+    def _retire_replaced_media(job: object) -> None:
+        replace_path = getattr(
+            job,
+            "replace_path",
+            None,
+        )
+
+        if replace_path is None:
+            return
+
+        old_path = Path(replace_path)
+        destination = Path(
+            getattr(job, "destination")
+        )
+
+        try:
+            same_path = (
+                old_path.resolve()
+                == destination.resolve()
+            )
+        except OSError:
+            same_path = (
+                old_path.absolute()
+                == destination.absolute()
+            )
+
+        if same_path:
+            return
+
+        if old_path.exists():
+            old_path.unlink()
+
+        if old_path.exists():
+            raise RuntimeError(
+                "Replaced media could not be retired: "
+                f"{old_path}"
+            )
 
     @staticmethod
     def _emit(

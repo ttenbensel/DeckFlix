@@ -88,3 +88,87 @@ def test_empty_queue_is_not_safe_to_empty(tmp_path: Path):
     assert result.failed == 0
     assert result.successful is False
     assert result.safe_to_empty is False
+
+
+def test_upgrade_retires_old_file_only_after_verified_install(
+    tmp_path: Path,
+):
+    source = tmp_path / "shuttle" / "episode.mp4"
+    old = tmp_path / "library" / "episode.mkv"
+    destination = (
+        tmp_path / "library" / "episode.mp4"
+    )
+    temp_dir = tmp_path / "temporary"
+
+    source.parent.mkdir()
+    old.parent.mkdir()
+
+    source.write_bytes(b"better-media")
+    old.write_bytes(b"inferior-media")
+
+    queue = ImportQueue()
+    job = ImportJob(
+        source=source,
+        destination=destination,
+        decision=make_decision(),
+        replace_path=old,
+    )
+    queue.add(job)
+
+    result = ImportEngine().execute(
+        queue,
+        temp_dir,
+    )
+
+    assert result.completed == 1
+    assert result.failed == 0
+
+    assert destination.exists()
+    assert (
+        destination.read_bytes()
+        == b"better-media"
+    )
+
+    assert not old.exists()
+    assert source.exists()
+
+    assert job.copied is True
+    assert job.verified is True
+    assert job.completed is True
+
+
+def test_failed_upgrade_preserves_old_library_file(
+    tmp_path: Path,
+):
+    source = tmp_path / "shuttle" / "missing.mp4"
+    old = tmp_path / "library" / "episode.mkv"
+    destination = (
+        tmp_path / "library" / "episode.mp4"
+    )
+
+    old.parent.mkdir()
+    old.write_bytes(b"inferior-but-safe")
+
+    queue = ImportQueue()
+    job = ImportJob(
+        source=source,
+        destination=destination,
+        decision=make_decision(),
+        replace_path=old,
+    )
+    queue.add(job)
+
+    result = ImportEngine().execute(
+        queue,
+        tmp_path / "temporary",
+    )
+
+    assert result.completed == 0
+    assert result.failed == 1
+
+    assert old.exists()
+    assert (
+        old.read_bytes()
+        == b"inferior-but-safe"
+    )
+    assert not destination.exists()

@@ -9,6 +9,7 @@ class ImportJob:
     source: Path
     destination: Path
     decision: Decision
+    replace_path: Path | None = None
     verified: bool = False
     copied: bool = False
     completed: bool = False
