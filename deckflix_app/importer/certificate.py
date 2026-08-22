@@ -121,6 +121,10 @@ def print_certificate(
             f"{safety.snapshot_identical}"
         )
         print(
+            f"Superseded     : "
+            f"{safety.snapshot_superseded}"
+        )
+        print(
             f"Review Hold    : "
             f"{safety.snapshot_review_hold}"
         )

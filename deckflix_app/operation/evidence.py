@@ -15,6 +15,7 @@ class EvidenceValidationResult:
     imported: int
     identical: int
     review_hold: int
+    superseded: int
     verified_bytes: int
 
     @property
@@ -57,14 +58,94 @@ def file_sha256(
     return digest.hexdigest()
 
 
+def _validate_superseded_evidence(
+    *,
+    entry,
+    snapshot_paths: set[Path],
+    shuttle_path: Path,
+) -> tuple[bool, str]:
+    """
+    Validate SUPERSEDED evidence without claiming byte identity.
+
+    A superseded snapshot file is accounted only when its recorded
+    survivor:
+
+      - exists,
+      - is a regular file,
+      - remains inside the same shuttle,
+      - is itself a member of the immutable shuttle snapshot.
+
+    No size or SHA-256 equality is required. SUPERSEDED describes
+    logical-media deduplication, not byte-for-byte identity.
+    """
+    if entry.evidence_path is None:
+        return (
+            False,
+            "Superseded survivor path is missing",
+        )
+
+    if entry.sha256 is not None:
+        return (
+            False,
+            "Superseded evidence must not claim SHA-256 identity",
+        )
+
+    try:
+        evidence = Path(
+            entry.evidence_path
+        ).resolve()
+
+        shuttle = shuttle_path.resolve()
+
+    except OSError as exc:
+        return (
+            False,
+            f"Superseded survivor unavailable: {exc}",
+        )
+
+    try:
+        relative_survivor = (
+            evidence.relative_to(
+                shuttle
+            )
+        )
+
+    except ValueError:
+        return (
+            False,
+            "Superseded survivor is outside shuttle",
+        )
+
+    if relative_survivor not in snapshot_paths:
+        return (
+            False,
+            "Superseded survivor is not in shuttle snapshot",
+        )
+
+    try:
+        if not evidence.is_file():
+            return (
+                False,
+                "Superseded survivor is not a file",
+            )
+
+    except OSError as exc:
+        return (
+            False,
+            f"Superseded survivor unavailable: {exc}",
+        )
+
+    return True, ""
+
+
 def validate_snapshot_evidence(
     manager: OperationManager,
 ) -> EvidenceValidationResult:
     """
     Revalidate every accounted snapshot disposition.
 
-    IMPORTED, IDENTICAL, and REVIEW_HOLD remain
-    accounted only when their evidence file:
+    IMPORTED, IDENTICAL, and REVIEW_HOLD remain accounted only
+    when their evidence file:
 
       - is recorded,
       - exists,
@@ -72,8 +153,16 @@ def validate_snapshot_evidence(
       - has a recorded SHA-256,
       - currently matches that SHA-256.
 
-    Invalid evidence is conservatively demoted to
-    UNRESOLVED.
+    SUPERSEDED remains accounted only when its surviving physical
+    shuttle source:
+
+      - is recorded,
+      - exists as a regular file,
+      - remains inside the same shuttle,
+      - belongs to the immutable shuttle snapshot,
+      - carries no SHA-256 identity claim.
+
+    Invalid evidence is conservatively demoted to UNRESOLVED.
 
     No evidence file is modified.
     """
@@ -86,6 +175,15 @@ def validate_snapshot_evidence(
         item.relative_path: item
         for item in operation.snapshot.files
     }
+
+    snapshot_paths = set(
+        snapshot_files
+    )
+
+    shuttle_path = (
+        operation.snapshot
+        .shuttle_path
+    )
 
     valid = 0
     invalid = 0
@@ -115,6 +213,34 @@ def validate_snapshot_evidence(
         snapshot_file = snapshot_files[
             relative_path
         ]
+
+        if (
+            entry.disposition
+            is SnapshotDisposition.SUPERSEDED
+        ):
+            (
+                evidence_valid,
+                reason,
+            ) = _validate_superseded_evidence(
+                entry=entry,
+                snapshot_paths=snapshot_paths,
+                shuttle_path=shuttle_path,
+            )
+
+            if not evidence_valid:
+                ledger.mark_unresolved(
+                    relative_path,
+                    detail=reason,
+                )
+
+                invalid += 1
+                continue
+
+            valid += 1
+            verified_bytes += (
+                snapshot_file.size
+            )
+            continue
 
         evidence_valid = True
         reason = ""
@@ -200,6 +326,10 @@ def validate_snapshot_evidence(
         SnapshotDisposition.REVIEW_HOLD
     )
 
+    superseded = ledger.count(
+        SnapshotDisposition.SUPERSEDED
+    )
+
     return EvidenceValidationResult(
         total=ledger.total_files,
         valid=valid,
@@ -208,5 +338,6 @@ def validate_snapshot_evidence(
         imported=imported,
         identical=identical,
         review_hold=review_hold,
+        superseded=superseded,
         verified_bytes=verified_bytes,
     )

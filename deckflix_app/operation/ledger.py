@@ -9,6 +9,7 @@ class SnapshotDisposition(str, Enum):
     IMPORTED = "IMPORTED"
     IDENTICAL = "IDENTICAL"
     REVIEW_HOLD = "REVIEW_HOLD"
+    SUPERSEDED = "SUPERSEDED"
     UNRESOLVED = "UNRESOLVED"
 
 
@@ -174,6 +175,34 @@ class SnapshotLedger:
             detail=(
                 "Preserved in Review Hold and "
                 "SHA-256 verified"
+            ),
+        )
+
+    def mark_superseded(
+        self,
+        relative_path: Path,
+        *,
+        surviving_path: Path,
+        detail: str = "",
+    ) -> SnapshotDispositionEntry:
+        """
+        Account for one physical snapshot file that was intentionally
+        suppressed because another shuttle file survived as the
+        representative for the same logical media identity.
+
+        SUPERSEDED deliberately does not claim byte identity.
+        The evidence path identifies the surviving physical source.
+        """
+        return self.set(
+            relative_path,
+            SnapshotDisposition.SUPERSEDED,
+            evidence_path=surviving_path,
+            detail=(
+                detail
+                or (
+                    "Superseded by another shuttle file "
+                    "for the same logical media identity"
+                )
             ),
         )
 

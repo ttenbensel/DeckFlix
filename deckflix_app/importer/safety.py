@@ -19,6 +19,7 @@ class ShuttleSafetyResult:
     snapshot_unresolved: int = 0
     snapshot_imported: int = 0
     snapshot_identical: int = 0
+    snapshot_superseded: int = 0
     snapshot_review_hold: int = 0
 
     @property
@@ -277,6 +278,13 @@ class ShuttleSafetyChecker:
             self._ledger_count(
                 ledger,
                 "IDENTICAL",
+            )
+        )
+
+        result.snapshot_superseded = (
+            self._ledger_count(
+                ledger,
+                "SUPERSEDED",
             )
         )
 

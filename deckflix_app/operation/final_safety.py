@@ -16,6 +16,7 @@ class FinalSafetyCertificate:
     snapshot_files: int
     imported: int
     identical: int
+    superseded: int
     review_hold: int
     unresolved: int
     validated_at: datetime
@@ -118,6 +119,7 @@ def create_final_safety_certificate(
         ),
         imported=result.imported,
         identical=result.identical,
+        superseded=result.superseded,
         review_hold=result.review_hold,
         unresolved=result.unresolved,
         validated_at=(

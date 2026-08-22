@@ -389,6 +389,7 @@ def _final_safety_certificate_to_dict(
         "snapshot_files": certificate.snapshot_files,
         "imported": certificate.imported,
         "identical": certificate.identical,
+        "superseded": certificate.superseded,
         "review_hold": certificate.review_hold,
         "unresolved": certificate.unresolved,
         "validated_at": (
@@ -422,6 +423,12 @@ def _final_safety_certificate_from_dict(
         ),
         identical=int(
             data["identical"]
+        ),
+        superseded=int(
+            data.get(
+                "superseded",
+                0,
+            )
         ),
         review_hold=int(
             data["review_hold"]

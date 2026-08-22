@@ -366,3 +366,144 @@ def test_legacy_safety_does_not_require_ledger(
         safety.snapshot_coverage_required
         is False
     )
+
+
+def test_superseded_snapshot_file_is_accounted_without_claiming_identity(
+    tmp_path,
+):
+    from deckflix_app.operation.ledger import (
+        SnapshotDisposition,
+        SnapshotLedger,
+    )
+    from deckflix_app.operation.snapshot import (
+        create_shuttle_snapshot,
+    )
+
+    shuttle = tmp_path / "shuttle"
+    shuttle.mkdir()
+
+    losing = shuttle / "Example.S01E01.480p.mkv"
+    surviving = shuttle / "Example.S01E01.720p.mkv"
+
+    losing.write_bytes(b"lower quality")
+    surviving.write_bytes(b"higher quality")
+
+    snapshot = create_shuttle_snapshot(
+        shuttle
+    )
+    ledger = SnapshotLedger.from_snapshot(
+        snapshot
+    )
+
+    losing_relative = losing.relative_to(
+        shuttle
+    )
+
+    entry = ledger.mark_superseded(
+        losing_relative,
+        surviving_path=surviving,
+    )
+
+    assert (
+        entry.disposition
+        is SnapshotDisposition.SUPERSEDED
+    )
+    assert entry.evidence_path == surviving
+    assert entry.sha256 is None
+    assert ledger.accounted_files == 1
+    assert ledger.unresolved_files == 1
+    assert ledger.coverage_complete is False
+
+
+def test_superseded_does_not_mean_sha256_identical(
+    tmp_path,
+):
+    from deckflix_app.operation.ledger import (
+        SnapshotDisposition,
+        SnapshotLedger,
+    )
+    from deckflix_app.operation.snapshot import (
+        create_shuttle_snapshot,
+    )
+
+    shuttle = tmp_path / "shuttle"
+    shuttle.mkdir()
+
+    losing = shuttle / "Example.S01E01.avi"
+    surviving = shuttle / "Example.S01E01.mp4"
+
+    losing.write_bytes(b"old")
+    surviving.write_bytes(b"new")
+
+    snapshot = create_shuttle_snapshot(
+        shuttle
+    )
+    ledger = SnapshotLedger.from_snapshot(
+        snapshot
+    )
+
+    entry = ledger.mark_superseded(
+        losing.relative_to(shuttle),
+        surviving_path=surviving,
+        detail="Lower-quality shuttle candidate lost logical dedup",
+    )
+
+    assert (
+        entry.disposition
+        is SnapshotDisposition.SUPERSEDED
+    )
+    assert (
+        entry.disposition
+        is not SnapshotDisposition.IDENTICAL
+    )
+    assert entry.sha256 is None
+    assert entry.evidence_path == surviving
+
+
+def test_superseded_can_complete_physical_snapshot_coverage(
+    tmp_path,
+):
+    from hashlib import sha256
+
+    from deckflix_app.operation.ledger import (
+        SnapshotLedger,
+    )
+    from deckflix_app.operation.snapshot import (
+        create_shuttle_snapshot,
+    )
+
+    shuttle = tmp_path / "shuttle"
+    shuttle.mkdir()
+
+    losing = shuttle / "Example.S01E01.avi"
+    surviving = shuttle / "Example.S01E01.mp4"
+
+    losing.write_bytes(b"old")
+    surviving.write_bytes(b"new")
+
+    snapshot = create_shuttle_snapshot(
+        shuttle
+    )
+    ledger = SnapshotLedger.from_snapshot(
+        snapshot
+    )
+
+    ledger.mark_superseded(
+        losing.relative_to(shuttle),
+        surviving_path=surviving,
+    )
+
+    digest = sha256(
+        surviving.read_bytes()
+    ).hexdigest()
+
+    ledger.mark_imported(
+        surviving.relative_to(shuttle),
+        destination=tmp_path / "library" / surviving.name,
+        sha256=digest,
+    )
+
+    assert ledger.accounted_files == 2
+    assert ledger.unresolved_files == 0
+    assert ledger.coverage_complete is True
+    assert ledger.coverage_percent == 100
